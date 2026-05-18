@@ -56,6 +56,7 @@ async def app_lifespan(_server: FastMCP) -> AsyncIterator[AppContext]:
 mcp = FastMCP(
     "Gmail DWD MCP Server",
     json_response=True,
+    stateless_http=True,
     lifespan=app_lifespan,
 )
 

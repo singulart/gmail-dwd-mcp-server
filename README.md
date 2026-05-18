@@ -1,12 +1,12 @@
 # Enterprise Gmail MCP Server
 
-A secure, enterprise-centric MCP server for Gmail that mirrors the [official MCP toolset by Google](https://developers.google.com/workspace/gmail/api/reference/mcp), enabling AI agents to impersonate corporate Gmail users in **domain-wide delegation (DWD)** scenarios. Assumes a service account, [DWD](https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation) and [**Workload Identity Federation (WIF)**](https://docs.cloud.google.com/iam/docs/workload-identity-federation) have been set up.
+A secure, enterprise-centric MCP server for Gmail that mirrors the [official MCP toolset by Google](https://developers.google.com/workspace/gmail/api/reference/mcp), enabling AI agents to impersonate corporate Gmail users in domain-wide delegation (DWD) scenarios. Assumes a service account, [DWD](https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation) and [**Workload Identity Federation (WIF)**](https://docs.cloud.google.com/iam/docs/workload-identity-federation) have been set up.
 
 This tool is used by Vincent, a SAS [agent](https://github.com/singulart/google-workspace-agent) running on AWS Bedrock AgentCore.
 
 ## Tools
 
-Same names and schemas as Google's official MCP ([reference](https://developers.google.com/workspace/gmail/api/reference/mcp)), plus required `email` (user to impersonate):
+We kept same names and schemas as Google's official MCP ([reference](https://developers.google.com/workspace/gmail/api/reference/mcp)), and added a required `email` parameter to each tool to set a corporate Gmail user to impersonate:
 
 | Tool | Description |
 |------|-------------|
@@ -24,6 +24,7 @@ Same names and schemas as Google's official MCP ([reference](https://developers.
 ## Prerequisites
 
 1. **Google Cloud**: Service account with Gmail API enabled.
+2. **Google Cloud**: Note that `gmailmcp.googleapis.com` API doesn't have to be enabled.
 2. **Workspace admin**: Domain-wide delegation for that SA with scope `https://www.googleapis.com/auth/gmail.modify` (or `https://mail.google.com/`).
 3. **AWS**: WIF external-account JSON (or service account JSON) stored in **SSM Parameter Store** (SecureString recommended).
 4. **Runtime IAM**: Permission to `ssm:GetParameter` on that parameter.
@@ -32,7 +33,7 @@ Same names and schemas as Google's official MCP ([reference](https://developers.
 
 Store the Google credential config JSON. Supported `type` values:
 
-- `external_account` — [Workload Identity Federation](https://cloud.google.com/iam/docs/workload-identity-federation) (recommended on AWS).
+- `external_account` — [Workload Identity Federation](https://cloud.google.com/iam/docs/workload-identity-federation) (recommended for AWS).
 - `service_account` — classic SA key JSON (if your org still uses keys).
 
 Example (WIF): the JSON downloaded when configuring an AWS workload identity pool provider for your GCP service account.
@@ -80,6 +81,26 @@ python -m gmail_dwd_mcp
   }
 }
 ```
+
+## Lambda deployment
+
+Package and upload to S3 for Terraform (or manual Lambda updates):
+
+```bash
+./deploy_lambda.sh              # or: ./deploy_lambda.sh gmail-dwd-mcp
+```
+
+Uploads `s3://$LAMBDA_S3_BUCKET/gmail-dwd-mcp/deployment.zip` (default bucket: `argorand-lambdas-repository`). Uses Docker (`public.ecr.aws/lambda/python:3.14-arm64`) when available so wheels match Lambda arm64.
+
+| Setting | Value |
+|---------|--------|
+| Handler | `handler.handler` |
+| Runtime | Python 3.14 (arm64) |
+| Transport | Streamable HTTP at `/mcp` |
+
+Set on the Lambda function: `GMAIL_WIF_SSM_PARAMETER`, IAM for `ssm:GetParameter`, and Gmail scopes via DWD. Expose via API Gateway HTTP API (`ANY /mcp`). Optional: `API_GATEWAY_BASE_PATH` (e.g. `/prod`) for REST API stage prefixes.
+
+Local stdio usage (`gmail-dwd-mcp`) is unchanged.
 
 ## Example tool call
 
