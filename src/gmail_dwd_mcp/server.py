@@ -263,7 +263,10 @@ def unlabel_thread(
 
 
 def main() -> None:
-    mcp.run()
+    transport = os.environ.get("MCP_TRANSPORT", "stdio")
+    if transport not in ("stdio", "sse", "streamable-http"):
+        raise SystemExit(f"Invalid MCP_TRANSPORT: {transport!r}")
+    mcp.run(transport=transport)  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":
