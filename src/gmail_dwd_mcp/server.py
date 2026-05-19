@@ -7,9 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from mcp.server.fastmcp import Context, FastMCP
-from mcp.server.fastmcp.server import StreamableHTTPASGIApp
 from mcp.server.session import ServerSession
-from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
 
@@ -88,25 +86,6 @@ mcp = FastMCP(
     transport_security=_transport_security(),
     lifespan=app_lifespan,
 )
-
-
-def create_http_session_manager() -> StreamableHTTPSessionManager:
-    """Create a session manager scoped to a single HTTP request.
-
-    Required for AWS Lambda: a long-lived ``session_manager.run()`` leaves MCP
-    background tasks running after the HTTP 200 is sent, so Mangum never returns
-    until the Lambda timeout.
-    """
-    if mcp._session_manager is None:
-        mcp.streamable_http_app()
-    return StreamableHTTPSessionManager(
-        app=mcp._mcp_server,
-        event_store=mcp._event_store,
-        retry_interval=mcp._retry_interval,
-        json_response=mcp.settings.json_response,
-        stateless=mcp.settings.stateless_http,
-        security_settings=mcp.settings.transport_security,
-    )
 
 
 def _gmail(ctx: Context[ServerSession, AppContext]) -> GmailService:
