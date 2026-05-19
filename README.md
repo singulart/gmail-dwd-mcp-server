@@ -27,7 +27,7 @@ We kept same names and schemas as Google's official MCP ([reference](https://dev
 2. **Google Cloud**: Note that `gmailmcp.googleapis.com` API doesn't have to be enabled.
 2. **Workspace admin**: Domain-wide delegation for that SA with scope `https://www.googleapis.com/auth/gmail.modify` (or `https://mail.google.com/`).
 3. **AWS**: WIF external-account JSON (or service account JSON) stored in **SSM Parameter Store** (SecureString recommended).
-4. **Runtime IAM**: Permission to `ssm:GetParameter` on that parameter.
+4. **Runtime IAM**: Permission to `ssm:GetParameter` on the WIF and (if used) allowed-hosts parameters.
 
 ### SSM parameter value
 
@@ -38,13 +38,24 @@ Store the Google credential config JSON. Supported `type` values:
 
 Example (WIF): the JSON downloaded when configuring an AWS workload identity pool provider for your GCP service account.
 
+### Allowed hosts (HTTP / Lambda)
+
+Create a separate **plain-text** SSM parameter (one host per line and/or comma-separated). Example:
+
+```text
+3otptwsb2dfuqmpufe42f547vq0ftuql.lambda-url.us-east-1.on.aws
+```
+
+Point `GMAIL_ALLOWED_HOSTS_SSM_PARAMETER` at that parameter name. MCP validates exact `Host` values only (no `*.domain` wildcards). Omit this variable for stdio-only use; DNS rebinding checks stay disabled.
+
 ## Configuration
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `GMAIL_WIF_SSM_PARAMETER` | Yes | SSM parameter name for the WIF/SA JSON |
+| `GMAIL_ALLOWED_HOSTS_SSM_PARAMETER` | No (Lambda HTTP) | SSM parameter name for plain-text allowed `Host` values (DNS rebinding protection) |
 | `AWS_REGION` | No | AWS region for SSM (uses default chain if unset) |
-| `GMAIL_WIF_CACHE_TTL_SECONDS` | No | In-memory cache TTL for SSM payload (default `3600`; `0` = cache until process exit) |
+| `GMAIL_WIF_CACHE_TTL_SECONDS` | No | In-memory cache TTL for SSM parameters (default `3600`; `0` = cache until process exit) |
 
 Standard AWS credential chain applies (`AWS_ACCESS_KEY_ID`, instance role, etc.).
 
@@ -115,16 +126,6 @@ The Lambda handler uses Mangum with `lifespan="off"` and starts the MCP session 
 In the Lambda console: **Monitor → View CloudWatch logs** (log group `/aws/lambda/<function-name>`). Open the latest **log stream** for the invocation; after a cold start you should see `Handler module loaded` during init, then `HTTP …` per request.
 
 If you only see `REPORT` with ~1.5s `Init Duration` and ~20ms `Duration`, the function is cold-starting and returning quickly (often API Gateway health checks or a non-`/mcp` path). Enable **Active tracing** (X-Ray) in Lambda configuration for request-level traces.
-
-### Host header / Lambda Function URL
-
-MCP’s built-in DNS rebinding check only allows **exact** `Host` values (not `*.lambda-url…`). For Lambda Function URLs, set:
-
-```text
-MCP_ALLOWED_HOST_SUFFIXES=.lambda-url.us-east-1.on.aws
-```
-
-The hostname (`3otpt…on.aws`) is **stable** for a given function URL until you delete and recreate it; you can also set an exact value via `MCP_ALLOWED_HOSTS` from Terraform. To turn checks off entirely: `MCP_DISABLE_DNS_REBINDING_PROTECTION=true`.
 
 Local stdio usage (`gmail-dwd-mcp`) is unchanged.
 

@@ -11,6 +11,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from mcp.server.session import ServerSession
 from mcp.types import ToolAnnotations
 
+from gmail_dwd_mcp.allowed_hosts import AllowedHostsCache
 from gmail_dwd_mcp.auth import WifConfigCache
 from gmail_dwd_mcp.config import Settings
 from gmail_dwd_mcp.gmail_service import GmailService
@@ -56,29 +57,25 @@ async def app_lifespan(_server: FastMCP) -> AsyncIterator[AppContext]:
 
 
 def _transport_security() -> TransportSecuritySettings | None:
-    """Configure MCP DNS rebinding checks (HTTP only).
+    """Configure MCP DNS rebinding checks from SSM (HTTP only)."""
+    param = os.environ.get("GMAIL_ALLOWED_HOSTS_SSM_PARAMETER")
+    if not param:
+        return None
 
-    MCP supports exact ``allowed_hosts`` and ``host:*`` port patterns only — not
-    ``*.example.com``. Use env ``MCP_ALLOWED_HOST_SUFFIXES`` for suffix matching
-    (enforced in the Lambda handler).
-    """
-    if os.environ.get("MCP_DISABLE_DNS_REBINDING_PROTECTION", "").lower() in (
-        "1",
-        "true",
-        "yes",
-    ):
-        return TransportSecuritySettings(enable_dns_rebinding_protection=False)
+    ttl = int(os.environ.get("GMAIL_WIF_CACHE_TTL_SECONDS", "3600"))
+    cache = AllowedHostsCache(
+        param,
+        aws_region=os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION"),
+        ttl_seconds=max(ttl, 0),
+    )
+    hosts = cache.get_hosts()
+    if not hosts:
+        return None
 
-    if os.environ.get("MCP_ALLOWED_HOST_SUFFIXES", "").strip():
-        return TransportSecuritySettings(enable_dns_rebinding_protection=False)
-
-    hosts = [h.strip() for h in os.environ.get("MCP_ALLOWED_HOSTS", "").split(",") if h.strip()]
-    if hosts:
-        return TransportSecuritySettings(
-            enable_dns_rebinding_protection=True,
-            allowed_hosts=hosts,
-        )
-    return None
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=hosts,
+    )
 
 
 mcp = FastMCP(

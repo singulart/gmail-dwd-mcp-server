@@ -7,6 +7,7 @@ class Settings:
     """Runtime configuration from environment variables."""
 
     ssm_parameter_name: str
+    allowed_hosts_ssm_parameter: str | None
     aws_region: str | None
     wif_cache_ttl_seconds: int
 
@@ -21,6 +22,7 @@ class Settings:
         ttl = int(os.environ.get("GMAIL_WIF_CACHE_TTL_SECONDS", "3600"))
         return cls(
             ssm_parameter_name=name,
+            allowed_hosts_ssm_parameter=os.environ.get("GMAIL_ALLOWED_HOSTS_SSM_PARAMETER"),
             aws_region=os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION"),
             wif_cache_ttl_seconds=max(ttl, 0),
         )
