@@ -57,8 +57,6 @@ Point `GMAIL_ALLOWED_HOSTS_SSM_PARAMETER` at that parameter name. MCP validates 
 | `AWS_REGION` | No | AWS region for SSM (uses default chain if unset) |
 | `GMAIL_WIF_CACHE_TTL_SECONDS` | No | In-memory cache TTL for SSM parameters (default `3600`; `0` = cache until process exit) |
 
-Standard AWS credential chain applies (`AWS_ACCESS_KEY_ID`, instance role, etc.).
-
 ## Install & run
 
 ```bash
@@ -111,7 +109,7 @@ Uploads `s3://$LAMBDA_S3_BUCKET/gmail-dwd-mcp/deployment.zip` (default bucket: `
 
 Set on the Lambda function: `GMAIL_WIF_SSM_PARAMETER`, IAM for `ssm:GetParameter`, and Gmail scopes via DWD. Expose via API Gateway HTTP API (`ANY /mcp`). Optional: `API_GATEWAY_BASE_PATH` (e.g. `/prod`) for REST API stage prefixes.
 
-The Lambda handler uses Mangum with `lifespan="off"` and starts the MCP session manager once per container (Mangum’s per-invocation lifespan conflicts with `StreamableHTTPSessionManager`’s single-`run()` constraint).
+The Lambda handler uses Mangum with `lifespan="off"` and a **new** `StreamableHTTPSessionManager` per HTTP request. Keeping one manager alive for the whole container leaves MCP `app.run()` tasks running after the HTTP 200 response; Mangum then does not return until the Lambda timeout (often 60s).
 
 ### CloudWatch logging
 
