@@ -100,6 +100,32 @@ Uploads `s3://$LAMBDA_S3_BUCKET/gmail-dwd-mcp/deployment.zip` (default bucket: `
 
 Set on the Lambda function: `GMAIL_WIF_SSM_PARAMETER`, IAM for `ssm:GetParameter`, and Gmail scopes via DWD. Expose via API Gateway HTTP API (`ANY /mcp`). Optional: `API_GATEWAY_BASE_PATH` (e.g. `/prod`) for REST API stage prefixes.
 
+The Lambda handler uses Mangum with `lifespan="off"` and starts the MCP session manager once per container (Mangum’s per-invocation lifespan conflicts with `StreamableHTTPSessionManager`’s single-`run()` constraint).
+
+### CloudWatch logging
+
+`REPORT` / `INIT_REPORT` lines are emitted by the **Lambda runtime**, not your application. To see app logs, set on the function:
+
+| Variable | Value |
+|----------|--------|
+| `LOG_LEVEL` | `DEBUG` |
+| `FASTMCP_LOG_LEVEL` | `DEBUG` |
+| `FASTMCP_DEBUG` | `true` |
+
+In the Lambda console: **Monitor → View CloudWatch logs** (log group `/aws/lambda/<function-name>`). Open the latest **log stream** for the invocation; after a cold start you should see `Handler module loaded` during init, then `HTTP …` per request.
+
+If you only see `REPORT` with ~1.5s `Init Duration` and ~20ms `Duration`, the function is cold-starting and returning quickly (often API Gateway health checks or a non-`/mcp` path). Enable **Active tracing** (X-Ray) in Lambda configuration for request-level traces.
+
+### Host header / Lambda Function URL
+
+MCP’s built-in DNS rebinding check only allows **exact** `Host` values (not `*.lambda-url…`). For Lambda Function URLs, set:
+
+```text
+MCP_ALLOWED_HOST_SUFFIXES=.lambda-url.us-east-1.on.aws
+```
+
+The hostname (`3otpt…on.aws`) is **stable** for a given function URL until you delete and recreate it; you can also set an exact value via `MCP_ALLOWED_HOSTS` from Terraform. To turn checks off entirely: `MCP_DISABLE_DNS_REBINDING_PROTECTION=true`.
+
 Local stdio usage (`gmail-dwd-mcp`) is unchanged.
 
 ## Example tool call

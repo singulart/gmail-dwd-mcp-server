@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any
 
 from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 from mcp.server.session import ServerSession
 from mcp.types import ToolAnnotations
 
@@ -53,10 +55,38 @@ async def app_lifespan(_server: FastMCP) -> AsyncIterator[AppContext]:
     yield AppContext(gmail=gmail)
 
 
+def _transport_security() -> TransportSecuritySettings | None:
+    """Configure MCP DNS rebinding checks (HTTP only).
+
+    MCP supports exact ``allowed_hosts`` and ``host:*`` port patterns only — not
+    ``*.example.com``. Use env ``MCP_ALLOWED_HOST_SUFFIXES`` for suffix matching
+    (enforced in the Lambda handler).
+    """
+    if os.environ.get("MCP_DISABLE_DNS_REBINDING_PROTECTION", "").lower() in (
+        "1",
+        "true",
+        "yes",
+    ):
+        return TransportSecuritySettings(enable_dns_rebinding_protection=False)
+
+    if os.environ.get("MCP_ALLOWED_HOST_SUFFIXES", "").strip():
+        return TransportSecuritySettings(enable_dns_rebinding_protection=False)
+
+    hosts = [h.strip() for h in os.environ.get("MCP_ALLOWED_HOSTS", "").split(",") if h.strip()]
+    if hosts:
+        return TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=hosts,
+        )
+    return None
+
+
 mcp = FastMCP(
     "Gmail DWD MCP Server",
     json_response=True,
     stateless_http=True,
+    host="0.0.0.0",
+    transport_security=_transport_security(),
     lifespan=app_lifespan,
 )
 
