@@ -61,6 +61,65 @@ Point `GMAIL_ALLOWED_HOSTS_SSM_PARAMETER` at that parameter name. MCP validates 
 
 Standard AWS credential chain applies (`AWS_ACCESS_KEY_ID`, instance role, etc.).
 
+## Observability (OpenTelemetry / ADOT on AgentCore Runtime)
+
+This MCP server is intended to run on [Amazon Bedrock AgentCore Runtime](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-mcp.html) as a custom container (`0.0.0.0:8000/mcp`, stateless streamable HTTP). That is **not** an ECS task with an ADOT Collector sidecar on `localhost:4317`.
+
+The server uses the [ADOT Python SDK](https://aws-otel.github.io/docs/getting-started/python-sdk) with in-process auto-instrumentation (**Starlette/ASGI**, **botocore**, outbound HTTP) plus custom spans per MCP tool and Gmail API call.
+
+### AgentCore Runtime (recommended)
+
+On AgentCore Runtime there is no local OTLP collector. With `AGENT_OBSERVABILITY_ENABLED=true`, the ADOT `aws_distro` configures **collector-less** export to regional AWS OTLP endpoints (using the runtime task role and `AWS_REGION`):
+
+- Traces → `https://xray.<region>.amazonaws.com/v1/traces`
+- Logs → `https://logs.<region>.amazonaws.com/v1/logs`
+
+The Docker image sets this mode by default. **Do not** set `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317` on AgentCore — it overrides ADOT’s auto-configuration and spans will not reach CloudWatch / X-Ray.
+
+Prerequisites (once per account): enable [CloudWatch Transaction Search](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/observability-configure.html#observability-configure-builtin) and enable **Tracing** on your AgentCore runtime in the console (spans appear in the `aws/spans` log group and GenAI Observability).
+
+Optional correlation with runtime logs (replace `<agent-id>` with your runtime id):
+
+```bash
+export OTEL_RESOURCE_ATTRIBUTES=service.name=gmail-dwd-mcp-server,aws.log.group.names=/aws/bedrock-agentcore/runtimes/<agent-id>
+export OTEL_EXPORTER_OTLP_LOGS_HEADERS=x-aws-log-group=/aws/bedrock-agentcore/runtimes/<agent-id>,x-aws-log-stream=runtime-logs,x-aws-metric-namespace=bedrock-agentcore
+```
+
+For distributed traces with the invoking agent, propagate `X-Amzn-Bedrock-AgentCore-Runtime-Session-Id` on MCP requests (ADOT maps this for session correlation). See [AgentCore observability](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/observability-configure.html).
+
+### Common environment variables
+
+| Variable | AgentCore default | Description |
+|----------|-------------------|-------------|
+| `AGENT_OBSERVABILITY_ENABLED` | `true` (Docker) | Enables ADOT regional OTLP export (not localhost collector) |
+| `OTEL_SERVICE_NAME` | `gmail-dwd-mcp-server` | Service name in traces / GenAI Observability |
+| `OTEL_PYTHON_DISTRO` | `aws_distro` | ADOT defaults |
+| `OTEL_PYTHON_CONFIGURATOR` | `aws_configurator` | ADOT SDK wiring |
+| `OTEL_PROPAGATORS` | `xray` | X-Ray trace context propagation |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | Required for AWS OTLP endpoints |
+| `OTEL_AWS_APPLICATION_SIGNALS_ENABLED` | `false` | Keep off unless using Application Signals |
+
+Telemetry is **off** unless `AGENT_OBSERVABILITY_ENABLED=true` (set in the Docker image for AgentCore; omit locally). To disable in AWS, unset the variable or set `AGENT_OBSERVABILITY_ENABLED=false` on the runtime.
+
+### Local dev or ECS with an ADOT Collector
+
+Only if you run **outside** AgentCore with a collector sidecar, point OTLP at the collector (gRPC is typical):
+
+```bash
+unset AGENT_OBSERVABILITY_ENABLED
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+```
+
+### Manual X-Ray endpoint (non-AgentCore)
+
+```bash
+unset AGENT_OBSERVABILITY_ENABLED
+export OTEL_EXPORTER_OTLP_TRACES_PROTOCOL=http/protobuf
+export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=https://xray.us-east-1.amazonaws.com/v1/traces
+export OTEL_RESOURCE_ATTRIBUTES=service.name=gmail-dwd-mcp-server
+```
+
 ## Docker
 
 ```bash

@@ -16,6 +16,7 @@ from gmail_dwd_mcp.auth import WifConfigCache
 from gmail_dwd_mcp.config import Settings
 from gmail_dwd_mcp.gmail_service import GmailService
 from gmail_dwd_mcp.models import MessageFormat
+from gmail_dwd_mcp.telemetry import setup_telemetry, tool_span
 
 READ_ONLY = ToolAnnotations(
     readOnlyHint=True,
@@ -106,13 +107,14 @@ def search_threads(
     Filters threads by Gmail query syntax and supports pagination. Returns thread
     IDs and message summaries (not full bodies). Use get_thread for full content.
     """
-    return _gmail(ctx).search_threads(
-        email,
-        query=query,
-        page_size=pageSize,
-        page_token=pageToken,
-        include_trash=includeTrash,
-    )
+    with tool_span("search_threads", email=email):
+        return _gmail(ctx).search_threads(
+            email,
+            query=query,
+            page_size=pageSize,
+            page_token=pageToken,
+            include_trash=includeTrash,
+        )
 
 
 @mcp.tool(annotations=READ_ONLY)
@@ -123,11 +125,12 @@ def get_thread(
     messageFormat: MessageFormat | None = None,
 ) -> dict[str, Any]:
     """Retrieves a specific email thread including its messages."""
-    return _gmail(ctx).get_thread(
-        email,
-        thread_id=threadId,
-        message_format=messageFormat,
-    )
+    with tool_span("get_thread", email=email):
+        return _gmail(ctx).get_thread(
+            email,
+            thread_id=threadId,
+            message_format=messageFormat,
+        )
 
 
 @mcp.tool(annotations=WRITE)
@@ -139,12 +142,13 @@ def list_drafts(
     pageToken: str | None = None,
 ) -> dict[str, Any]:
     """Lists draft emails from a user's Gmail account."""
-    return _gmail(ctx).list_drafts(
-        email,
-        query=query,
-        page_size=pageSize,
-        page_token=pageToken,
-    )
+    with tool_span("list_drafts", email=email):
+        return _gmail(ctx).list_drafts(
+            email,
+            query=query,
+            page_size=pageSize,
+            page_token=pageToken,
+        )
 
 
 @mcp.tool(annotations=WRITE)
@@ -160,16 +164,17 @@ def create_draft(
     replyToMessageId: str | None = None,
 ) -> dict[str, Any]:
     """Creates a new draft email in the user's Gmail account."""
-    return _gmail(ctx).create_draft(
-        email,
-        to=to,
-        cc=cc,
-        bcc=bcc,
-        subject=subject,
-        body=body,
-        html_body=htmlBody,
-        reply_to_message_id=replyToMessageId,
-    )
+    with tool_span("create_draft", email=email):
+        return _gmail(ctx).create_draft(
+            email,
+            to=to,
+            cc=cc,
+            bcc=bcc,
+            subject=subject,
+            body=body,
+            html_body=htmlBody,
+            reply_to_message_id=replyToMessageId,
+        )
 
 
 @mcp.tool(annotations=READ_ONLY)
@@ -180,11 +185,12 @@ def list_labels(
     pageToken: str | None = None,
 ) -> dict[str, Any]:
     """Lists user-defined labels. System labels use well-known IDs (INBOX, TRASH, etc.)."""
-    return _gmail(ctx).list_labels(
-        email,
-        page_size=pageSize,
-        page_token=pageToken,
-    )
+    with tool_span("list_labels", email=email):
+        return _gmail(ctx).list_labels(
+            email,
+            page_size=pageSize,
+            page_token=pageToken,
+        )
 
 
 @mcp.tool(annotations=WRITE)
@@ -195,11 +201,12 @@ def create_label(
     color: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Creates a new label in the user's Gmail account."""
-    return _gmail(ctx).create_label(
-        email,
-        display_name=displayName,
-        color=color,
-    )
+    with tool_span("create_label", email=email):
+        return _gmail(ctx).create_label(
+            email,
+            display_name=displayName,
+            color=color,
+        )
 
 
 @mcp.tool(annotations=WRITE_IDEMPOTENT)
@@ -210,11 +217,12 @@ def label_message(
     ctx: Context[ServerSession, AppContext],
 ) -> dict[str, Any]:
     """Adds one or more labels to a specific message."""
-    return _gmail(ctx).label_message(
-        email,
-        message_id=messageId,
-        label_ids=labelIds,
-    )
+    with tool_span("label_message", email=email):
+        return _gmail(ctx).label_message(
+            email,
+            message_id=messageId,
+            label_ids=labelIds,
+        )
 
 
 @mcp.tool(annotations=DESTRUCTIVE_IDEMPOTENT)
@@ -225,11 +233,12 @@ def unlabel_message(
     ctx: Context[ServerSession, AppContext],
 ) -> dict[str, Any]:
     """Removes one or more labels from a specific message."""
-    return _gmail(ctx).unlabel_message(
-        email,
-        message_id=messageId,
-        label_ids=labelIds,
-    )
+    with tool_span("unlabel_message", email=email):
+        return _gmail(ctx).unlabel_message(
+            email,
+            message_id=messageId,
+            label_ids=labelIds,
+        )
 
 
 @mcp.tool(annotations=WRITE_IDEMPOTENT)
@@ -240,11 +249,12 @@ def label_thread(
     ctx: Context[ServerSession, AppContext],
 ) -> dict[str, Any]:
     """Adds labels to an entire thread (all current and future messages)."""
-    return _gmail(ctx).label_thread(
-        email,
-        thread_id=threadId,
-        label_ids=labelIds,
-    )
+    with tool_span("label_thread", email=email):
+        return _gmail(ctx).label_thread(
+            email,
+            thread_id=threadId,
+            label_ids=labelIds,
+        )
 
 
 @mcp.tool(annotations=DESTRUCTIVE_IDEMPOTENT)
@@ -255,14 +265,16 @@ def unlabel_thread(
     ctx: Context[ServerSession, AppContext],
 ) -> dict[str, Any]:
     """Removes labels from an entire thread."""
-    return _gmail(ctx).unlabel_thread(
-        email,
-        thread_id=threadId,
-        label_ids=labelIds,
-    )
+    with tool_span("unlabel_thread", email=email):
+        return _gmail(ctx).unlabel_thread(
+            email,
+            thread_id=threadId,
+            label_ids=labelIds,
+        )
 
 
 def main() -> None:
+    setup_telemetry()
     transport = os.environ.get("MCP_TRANSPORT", "stdio")
     if transport not in ("stdio", "sse", "streamable-http"):
         raise SystemExit(f"Invalid MCP_TRANSPORT: {transport!r}")

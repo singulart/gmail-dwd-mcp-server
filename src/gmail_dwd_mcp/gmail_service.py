@@ -10,6 +10,7 @@ from googleapiclient.discovery import build
 from gmail_dwd_mcp.auth import WifConfigCache, credentials_for_user
 from gmail_dwd_mcp.mime import message_from_gmail_api
 from gmail_dwd_mcp.models import MessageFormat
+from gmail_dwd_mcp.telemetry import traced_gmail_method
 
 
 class GmailService:
@@ -20,6 +21,7 @@ class GmailService:
         creds = credentials_for_user(self._wif_cache, email)
         return build("gmail", "v1", credentials=creds, cache_discovery=False)
 
+    @traced_gmail_method
     def search_threads(
         self,
         email: str,
@@ -59,6 +61,7 @@ class GmailService:
             result["nextPageToken"] = list_resp["nextPageToken"]
         return result
 
+    @traced_gmail_method
     def get_thread(
         self,
         email: str,
@@ -105,6 +108,7 @@ class GmailService:
                 messages.append(message_from_gmail_api(msg, full_content=full_content))
         return {"id": thread["id"], "messages": messages}
 
+    @traced_gmail_method
     def list_drafts(
         self,
         email: str,
@@ -140,6 +144,7 @@ class GmailService:
             result["nextPageToken"] = list_resp["nextPageToken"]
         return result
 
+    @traced_gmail_method
     def create_draft(
         self,
         email: str,
@@ -181,6 +186,7 @@ class GmailService:
         )
         return self._draft_from_api(full)
 
+    @traced_gmail_method
     def list_labels(
         self,
         email: str,
@@ -206,6 +212,7 @@ class GmailService:
             result["nextPageToken"] = str(end)
         return result
 
+    @traced_gmail_method
     def create_label(
         self,
         email: str,
@@ -227,17 +234,21 @@ class GmailService:
         created = service.users().labels().create(userId="me", body=body).execute()
         return self._label_from_api(created)
 
+    @traced_gmail_method
     def label_message(self, email: str, *, message_id: str, label_ids: list[str]) -> dict[str, Any]:
         return self._modify_message(email, message_id, add=label_ids)
 
+    @traced_gmail_method
     def unlabel_message(
         self, email: str, *, message_id: str, label_ids: list[str]
     ) -> dict[str, Any]:
         return self._modify_message(email, message_id, remove=label_ids)
 
+    @traced_gmail_method
     def label_thread(self, email: str, *, thread_id: str, label_ids: list[str]) -> dict[str, Any]:
         return self._modify_thread(email, thread_id, add=label_ids)
 
+    @traced_gmail_method
     def unlabel_thread(self, email: str, *, thread_id: str, label_ids: list[str]) -> dict[str, Any]:
         return self._modify_thread(email, thread_id, remove=label_ids)
 
