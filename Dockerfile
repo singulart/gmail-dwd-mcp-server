@@ -21,7 +21,7 @@ ENV PYTHONUNBUFFERED=1 \
     OTEL_PYTHON_CONFIGURATOR=aws_configurator \
     OTEL_PROPAGATORS=xray \
     OTEL_AWS_APPLICATION_SIGNALS_ENABLED=false \
-    OTEL_SERVICE_NAME=gmail-dwd-mcp-server \
+    OTEL_SERVICE_NAME=gmail-mcp-server \
     OTEL_TRACES_EXPORTER=otlp \
     OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 

@@ -8,10 +8,8 @@ from typing import Any
 
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.session import ServerSession
-from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
 
-from gmail_dwd_mcp.allowed_hosts import AllowedHostsCache
 from gmail_dwd_mcp.auth import WifConfigCache
 from gmail_dwd_mcp.config import Settings
 from gmail_dwd_mcp.gmail_service import GmailService
@@ -57,34 +55,11 @@ async def app_lifespan(_server: FastMCP) -> AsyncIterator[AppContext]:
     yield AppContext(gmail=gmail)
 
 
-def _transport_security() -> TransportSecuritySettings | None:
-    """Configure MCP DNS rebinding checks from SSM (HTTP only)."""
-    param = os.environ.get("GMAIL_ALLOWED_HOSTS_SSM_PARAMETER")
-    if not param:
-        return None
-
-    ttl = int(os.environ.get("GMAIL_WIF_CACHE_TTL_SECONDS", "3600"))
-    cache = AllowedHostsCache(
-        param,
-        aws_region=os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION"),
-        ttl_seconds=max(ttl, 0),
-    )
-    hosts = cache.get_hosts()
-    if not hosts:
-        return None
-
-    return TransportSecuritySettings(
-        enable_dns_rebinding_protection=True,
-        allowed_hosts=hosts,
-    )
-
-
 mcp = FastMCP(
     "Gmail DWD MCP Server",
     json_response=True,
     stateless_http=True,
     host="0.0.0.0",
-    transport_security=_transport_security(),
     lifespan=app_lifespan,
 )
 

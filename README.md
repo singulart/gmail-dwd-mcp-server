@@ -38,22 +38,11 @@ Store the Google credential config JSON. Supported `type` values:
 
 Example (WIF): the JSON downloaded when configuring an AWS workload identity pool provider for your GCP service account.
 
-### Allowed hosts (Streamable HTTP)
-
-When running with Streamable HTTP transport, create a separate **plain-text** SSM parameter (one host per line and/or comma-separated), for example your public API hostname:
-
-```text
-api.example.com
-```
-
-Point `GMAIL_ALLOWED_HOSTS_SSM_PARAMETER` at that parameter name. MCP validates exact `Host` values only (no `*.domain` wildcards). Omit this variable for stdio-only use; DNS rebinding checks stay disabled.
-
 ## Configuration
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `GMAIL_WIF_SSM_PARAMETER` | Yes | SSM parameter name for the WIF/SA JSON |
-| `GMAIL_ALLOWED_HOSTS_SSM_PARAMETER` | No | SSM parameter name for plain-text allowed `Host` values (DNS rebinding protection for HTTP) |
+| `GCP_WIF_CREDENTIAL_CONFIG_SSM_PARAMETER` | Yes | SSM parameter name for the WIF/SA JSON |
 | `AWS_REGION` | No | AWS region for SSM (uses default chain if unset) |
 | `GMAIL_WIF_CACHE_TTL_SECONDS` | No | In-memory cache TTL for SSM parameters (default `3600`; `0` = cache until process exit) |
 | `MCP_TRANSPORT` | No | `stdio` (default), `sse`, or `streamable-http` (set in Docker image) |
@@ -125,8 +114,7 @@ export OTEL_RESOURCE_ATTRIBUTES=service.name=gmail-dwd-mcp-server
 ```bash
 docker build -t gmail-dwd-mcp-server .
 docker run --rm -p 8000:8000 \
-  -e GMAIL_WIF_SSM_PARAMETER=/your/org/gmail-wif-config \
-  -e GMAIL_ALLOWED_HOSTS_SSM_PARAMETER=/your/org/gmail-allowed-hosts \
+  -e GCP_WIF_CREDENTIAL_CONFIG_SSM_PARAMETER=/your/org/gmail-wif-config \
   -e AWS_REGION=us-east-1 \
   gmail-dwd-mcp-server
 ```
