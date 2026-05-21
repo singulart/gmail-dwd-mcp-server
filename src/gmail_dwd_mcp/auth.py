@@ -7,6 +7,7 @@ from typing import Any
 
 import boto3
 from google.auth import default as google_auth_default
+from google.auth import impersonated_credentials
 from google.auth import load_credentials_from_dict
 from google.auth.credentials import Credentials
 from google.auth.transport.requests import Request
@@ -58,17 +59,38 @@ def _base_credentials(config: dict[str, Any]) -> Credentials:
     return credentials
 
 
+def _delegated_credentials(base: Credentials, config: dict[str, Any], email: str) -> Credentials:
+    """Impersonate `email` via domain-wide delegation."""
+    cred_type = config.get("type")
+
+    if cred_type == "external_account":
+        target_principal = base.service_account_email
+        if not target_principal:
+            raise RuntimeError(
+                "external_account config must include service_account_impersonation_url "
+                "for domain-wide delegation"
+            )
+        return impersonated_credentials.Credentials(
+            source_credentials=base,
+            target_principal=target_principal,
+            target_scopes=GMAIL_SCOPES,
+            subject=email,
+        )
+
+    if hasattr(base, "with_scopes"):
+        base = base.with_scopes(GMAIL_SCOPES)
+    if not hasattr(base, "with_subject"):
+        raise RuntimeError(
+            f"Credential type {type(base).__name__} does not support domain-wide delegation"
+        )
+    return base.with_subject(email)
+
+
 def credentials_for_user(cache: WifConfigCache, email: str) -> Credentials:
     """Return scoped credentials impersonating `email` via domain-wide delegation."""
     config = cache.get_config()
     credentials = _base_credentials(config)
-    if hasattr(credentials, "with_scopes"):
-        credentials = credentials.with_scopes(GMAIL_SCOPES)
-    if not credentials.valid:
-        credentials.refresh(Request())
-    delegated = credentials.with_subject(email)
-    if hasattr(delegated, "with_scopes"):
-        delegated = delegated.with_scopes(GMAIL_SCOPES)
+    delegated = _delegated_credentials(credentials, config, email)
     if not delegated.valid:
         delegated.refresh(Request())
     return delegated
