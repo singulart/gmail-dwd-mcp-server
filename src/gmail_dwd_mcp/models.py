@@ -40,6 +40,7 @@ class Message(BaseModel):
     cc_recipients: list[str] = Field(default_factory=list, alias="ccRecipients")
     date: str | None = None
     plaintext_body: str | None = Field(default=None, alias="plaintextBody")
+    html_body: str | None = Field(default=None, alias="htmlBody")
     attachment_ids: list[str] = Field(default_factory=list, alias="attachmentIds")
 
 
@@ -60,6 +61,7 @@ class Draft(BaseModel):
     cc_recipients: list[str] = Field(default_factory=list, alias="ccRecipients")
     bcc_recipients: list[str] = Field(default_factory=list, alias="bccRecipients")
     plaintext_body: str | None = Field(default=None, alias="plaintextBody")
+    html_body: str | None = Field(default=None, alias="htmlBody")
     date: str | None = None
 
 

@@ -329,6 +329,7 @@ class GmailService:
             "ccRecipients": parsed.get("ccRecipients", []),
             "bccRecipients": [],
             "plaintextBody": parsed.get("plaintextBody"),
+            "htmlBody": parsed.get("htmlBody"),
             "date": parsed.get("date"),
         }
 

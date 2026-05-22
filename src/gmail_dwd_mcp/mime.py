@@ -21,23 +21,31 @@ def _parse_addresses(value: str | None) -> list[str]:
     return [addr for _, addr in email.utils.getaddresses([value]) if addr]
 
 
-def _extract_plaintext(part: Message) -> str | None:
+def _extract_body_by_type(part: Message, content_type: str) -> str | None:
     if part.is_multipart():
         for child in part.walk():
             if child.get_content_maintype() == "multipart":
                 continue
-            if child.get_content_type() == "text/plain" and not child.get_filename():
+            if child.get_content_type() == content_type and not child.get_filename():
                 payload = child.get_payload(decode=True)
                 if payload:
                     charset = child.get_content_charset() or "utf-8"
                     return payload.decode(charset, errors="replace")
         return None
-    if part.get_content_type() == "text/plain":
+    if part.get_content_type() == content_type:
         payload = part.get_payload(decode=True)
         if payload:
             charset = part.get_content_charset() or "utf-8"
             return payload.decode(charset, errors="replace")
     return None
+
+
+def _extract_plaintext(part: Message) -> str | None:
+    return _extract_body_by_type(part, "text/plain")
+
+
+def _extract_html(part: Message) -> str | None:
+    return _extract_body_by_type(part, "text/html")
 
 
 def _attachment_ids(part: Message) -> list[str]:
@@ -88,26 +96,28 @@ def message_from_gmail_api(
         raw_bytes = base64.urlsafe_b64decode(msg["raw"].encode("utf-8"))
         mime = message_from_bytes(raw_bytes)
         result["plaintextBody"] = _extract_plaintext(mime)
+        result["htmlBody"] = _extract_html(mime)
         result["attachmentIds"] = _attachment_ids(mime)
     elif full_content and msg.get("payload"):
-        body_data = _extract_body_from_payload(msg["payload"])
-        result["plaintextBody"] = body_data
+        result["plaintextBody"] = _extract_body_from_payload(msg["payload"], "text/plain")
+        result["htmlBody"] = _extract_body_from_payload(msg["payload"], "text/html")
         result["attachmentIds"] = _collect_attachment_ids(msg["payload"])
     else:
         result["plaintextBody"] = None
+        result["htmlBody"] = None
         result["attachmentIds"] = []
 
     return result
 
 
-def _extract_body_from_payload(payload: dict[str, Any]) -> str | None:
+def _extract_body_from_payload(payload: dict[str, Any], content_type: str) -> str | None:
     mime_type = payload.get("mimeType", "")
     body = payload.get("body", {})
     data = body.get("data")
-    if mime_type == "text/plain" and data:
+    if mime_type == content_type and data:
         return base64.urlsafe_b64decode(data).decode("utf-8", errors="replace")
     for part in payload.get("parts", []) or []:
-        text = _extract_body_from_payload(part)
+        text = _extract_body_from_payload(part, content_type)
         if text:
             return text
     return None
