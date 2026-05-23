@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import base64
 import email.utils
+import re
 from email import message_from_bytes
 from email.message import Message
+from html import escape, unescape
 from typing import Any
 
 
@@ -13,6 +15,51 @@ def _header_value(headers: list[dict[str, str]], name: str) -> str | None:
         if header.get("name", "").lower() == lower:
             return header.get("value")
     return None
+
+
+def html_to_plain(html: str) -> str:
+    text = re.sub(r"<br\s*/?>", "\n", html, flags=re.IGNORECASE)
+    text = re.sub(r"</p>", "\n\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", "", text)
+    return unescape(text).strip()
+
+
+def plain_to_html(text: str) -> str:
+    return f"<div>{escape(text).replace(chr(10), '<br>')}</div>"
+
+
+def append_html_signature(content: str | None, signature_html: str) -> str:
+    signature_html = signature_html.strip()
+    if not signature_html:
+        return content or ""
+    if content:
+        content = content.rstrip()
+        if signature_html in content:
+            return content
+        return f"{content}<br><br>{signature_html}"
+    return signature_html
+
+
+def append_plain_signature(content: str | None, signature_plain: str) -> str:
+    signature_plain = signature_plain.strip()
+    if not signature_plain:
+        return content or ""
+    if content:
+        content = content.rstrip()
+        if signature_plain in content:
+            return content
+        return f"{content}\n\n{signature_plain}"
+    return signature_plain
+
+
+def strip_trailing_plain_signature(text: str, signature_plain: str) -> str:
+    signature_plain = signature_plain.strip()
+    if not signature_plain:
+        return text
+    trimmed = text.rstrip()
+    if trimmed.endswith(signature_plain):
+        return trimmed[: -len(signature_plain)].rstrip()
+    return text
 
 
 def _parse_addresses(value: str | None) -> list[str]:
@@ -76,6 +123,7 @@ def message_from_gmail_api(
     *,
     full_content: bool,
 ) -> dict[str, Any]:
+    print(f"message_from_gmail_api: {msg}")
     headers = msg.get("payload", {}).get("headers", [])
     if not headers and "payload" in msg:
         headers = msg["payload"].get("headers", [])

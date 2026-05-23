@@ -26,4 +26,8 @@ class Settings:
         )
 
 
-GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
+GMAIL_SCOPES = [
+    "https://www.googleapis.com/auth/gmail.modify",
+    # Required to read HTML signatures from users.settings.sendAs.
+    "https://www.googleapis.com/auth/gmail.settings.basic",
+]

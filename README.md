@@ -25,7 +25,7 @@ We kept same names and schemas as Google's official MCP ([reference](https://dev
 
 1. **Google Cloud**: Service account with Gmail API enabled.
 2. **Google Cloud**: Note that `gmailmcp.googleapis.com` API doesn't have to be enabled.
-3. **Workspace admin**: Domain-wide delegation for that SA with scope `https://www.googleapis.com/auth/gmail.modify` (or `https://mail.google.com/`).
+3. **Workspace admin**: Domain-wide delegation for that SA with scopes `https://www.googleapis.com/auth/gmail.modify` and `https://www.googleapis.com/auth/gmail.settings.basic` (or `https://mail.google.com/`).
 4. **AWS**: WIF external-account JSON (or service account JSON) stored in **SSM Parameter Store** (SecureString recommended).
 5. **Runtime IAM**: Permission to `ssm:GetParameter` on the WIF and (if used) allowed-hosts parameters.
 
