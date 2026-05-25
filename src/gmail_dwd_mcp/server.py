@@ -12,6 +12,10 @@ from mcp.types import ToolAnnotations
 
 from gmail_dwd_mcp.auth import WifConfigCache
 from gmail_dwd_mcp.config import Settings
+from gmail_dwd_mcp.gmail_fetch import (
+    get_thread_fetch_executor,
+    shutdown_thread_fetch_executor,
+)
 from gmail_dwd_mcp.gmail_service import GmailService
 from gmail_dwd_mcp.models import MessageFormat
 from gmail_dwd_mcp.telemetry import setup_telemetry, tool_span
@@ -50,9 +54,13 @@ class AppContext:
 @asynccontextmanager
 async def app_lifespan(_server: FastMCP) -> AsyncIterator[AppContext]:
     settings = Settings.from_env()
+    get_thread_fetch_executor(max_workers=settings.gmail_hydrate_max_concurrency)
     wif_cache = WifConfigCache(settings)
     gmail = GmailService(wif_cache)
-    yield AppContext(gmail=gmail)
+    try:
+        yield AppContext(gmail=gmail)
+    finally:
+        shutdown_thread_fetch_executor()
 
 
 mcp = FastMCP(
