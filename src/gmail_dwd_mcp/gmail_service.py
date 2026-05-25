@@ -18,7 +18,7 @@ from gmail_dwd_mcp.mime import (
 )
 from gmail_dwd_mcp.hydration import (
     SearchThreadsResult,
-    triage_thread_from_list_summary,
+    search_thread_from_list_summary,
 )
 from gmail_dwd_mcp.telemetry import traced_gmail_method
 
@@ -56,9 +56,9 @@ class GmailService:
     ) -> SearchThreadsResult:
         """Discover threads for triage (no bodies, no per-thread fetches).
 
-        API cost: **1** ``threads.list`` call. Each result is a thread id with
-        ``messages: []``. Use ``get_thread`` / ``get_threads`` for snippets and
-        normalized bodies.
+        API cost: **1** ``threads.list`` call. Each result is a :class:`SearchThread`
+        (``id``, ``snippet``). Use ``get_thread`` / ``get_threads`` for per-message
+        headers and normalized bodies.
         """
         service = self._service(email)
         user_id = "me"
@@ -77,7 +77,7 @@ class GmailService:
             .execute()
         )
         threads_out = [
-            triage_thread_from_list_summary(summary)
+            search_thread_from_list_summary(summary)
             for summary in list_resp.get("threads", [])
         ]
         return SearchThreadsResult(

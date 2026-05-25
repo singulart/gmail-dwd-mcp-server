@@ -40,8 +40,18 @@ class HydrationOptions(_CamelModel):
     include_attachment_ids: bool = Field(default=True, alias="includeAttachmentIds")
 
 
+class SearchThread(_CamelModel):
+    """search_threads row: discovery fields from ``threads.list`` (no ``messages``)."""
+
+    id: str
+    snippet: str | None = Field(
+        default=None,
+        description="Short preview from threads.list (newest message in thread).",
+    )
+
+
 class TriageMessage(_CamelModel):
-    """Per-message triage fields when enriched elsewhere; search_threads uses ids only."""
+    """Per-message triage metadata (enriched search / metadata fetch paths)."""
 
     id: str
     snippet: str | None = None
@@ -53,7 +63,10 @@ class TriageMessage(_CamelModel):
 
 
 class TriageThread(_CamelModel):
+    """Enriched triage thread (metadata per message; no bodies)."""
+
     id: str
+    snippet: str | None = None
     messages: list[TriageMessage] = Field(default_factory=list)
 
 
@@ -103,9 +116,9 @@ class HydrateResult(_CamelModel):
 
 
 class SearchThreadsResult(_CamelModel):
-    """search_threads response: thread ids for discovery. Hydrate separately."""
+    """search_threads response: discovery rows from threads.list. Hydrate for full bodies."""
 
-    threads: list[TriageThread] = Field(default_factory=list)
+    threads: list[SearchThread] = Field(default_factory=list)
     next_page_token: str | None = Field(default=None, alias="nextPageToken")
 
 
@@ -114,9 +127,9 @@ def hydration_to_json(model: BaseModel) -> dict[str, Any]:
     return model.model_dump(by_alias=True, exclude_none=True)
 
 
-def triage_thread_from_list_summary(summary: dict[str, Any]) -> TriageThread:
-    """Minimal triage row from ``threads.list`` (thread id only, no per-message fetch)."""
-    return TriageThread(id=summary["id"], messages=[])
+def search_thread_from_list_summary(summary: dict[str, Any]) -> SearchThread:
+    """Discovery row from ``threads.list`` (id + snippet; no per-thread metadata fetch)."""
+    return SearchThread(id=summary["id"], snippet=summary.get("snippet"))
 
 
 def triage_thread_from_api_thread(thread: dict[str, Any]) -> TriageThread:
@@ -134,4 +147,8 @@ def triage_thread_from_api_thread(thread: dict[str, Any]) -> TriageThread:
                 date=msg.get("date"),
             )
         )
-    return TriageThread(id=thread["id"], messages=messages)
+    return TriageThread(
+        id=thread["id"],
+        snippet=thread.get("snippet"),
+        messages=messages,
+    )

@@ -36,12 +36,13 @@ def test_get_threads_output_schema_describes_hydrate_result() -> None:
     assert "HydrateResult" in json.dumps(schema)
 
 
-def test_search_threads_output_schema_describes_triage_threads() -> None:
+def test_search_threads_output_schema_describes_search_threads() -> None:
     schema = _tool_schema("search_threads")
     props = schema["properties"]
     assert "threads" in props
-    triage = schema["$defs"]["TriageThread"]["properties"]
-    assert "id" in triage
-    assert "messages" in triage
-    msg_props = schema["$defs"]["TriageMessage"]["properties"]
-    assert "body" not in msg_props
+    search_thread = schema["$defs"]["SearchThread"]["properties"]
+    assert "id" in search_thread
+    assert "snippet" in search_thread
+    assert "messages" not in search_thread
+    assert "body" not in search_thread
+    assert "SearchThread" in json.dumps(schema)

@@ -105,7 +105,8 @@ def search_threads(
 ) -> SearchThreadsResult:
     """Lists email threads from a user's Gmail account.  
     If response includes a `nextPageToken`, you can use it to fetch the next page of threads.
-    Returns thread ids for triage (no message bodies). Use get_threads to hydrate.
+    Returns SearchThread rows (id, snippet) from threads.list — no messages array.
+    Use get_threads to hydrate full text.
 
     Filter threads using `query`; syntax described below:
     

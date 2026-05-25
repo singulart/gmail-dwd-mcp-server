@@ -28,14 +28,14 @@ Use two response shapes:
 
 | Tool | Shape | Message text |
 |------|--------|----------------|
-| `search_threads` | **TriageThread** | Thread ids only (`messages: []`) — no `body` |
+| `search_threads` | **SearchThread** | Thread `id` + list `snippet` — no `messages`, no `body` |
 | `get_thread` / `get_threads` | **HydratedThread** | Normalized plain text in `body` only |
 
 Write tools (`create_draft`, labels, etc.) keep their own schemas and are unrelated to the read shapes above.
 
 ### Read tool examples
 
-**`search_threads`** — discover thread ids (one `threads.list` call; no per-thread fetches):
+**`search_threads`** — discover threads (one `threads.list` call; snippet per row, no per-thread fetches):
 
 Request:
 
@@ -55,8 +55,8 @@ Response (shape):
 ```json
 {
   "threads": [
-    { "id": "thread-xyz", "messages": [] },
-    { "id": "thread-abc", "messages": [] }
+    { "id": "thread-xyz", "snippet": "Thanks for the update…" },
+    { "id": "thread-abc", "snippet": "Meeting tomorrow at 3pm" }
   ],
   "nextPageToken": "..."
 }

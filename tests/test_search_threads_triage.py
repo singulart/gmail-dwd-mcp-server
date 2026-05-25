@@ -9,7 +9,10 @@ def _gmail_with_list(n_threads: int) -> tuple[GmailService, MagicMock]:
     gmail = GmailService(wif_cache=MagicMock())
     mock_service = MagicMock()
     mock_service.users.return_value.threads.return_value.list.return_value.execute.return_value = {
-        "threads": [{"id": f"thread-{i}"} for i in range(n_threads)],
+        "threads": [
+            {"id": f"thread-{i}", "snippet": f"Preview for thread {i}"}
+            for i in range(n_threads)
+        ],
     }
     gmail._service = MagicMock(return_value=mock_service)  # type: ignore[method-assign]
     return gmail, mock_service
@@ -27,10 +30,23 @@ def test_search_threads_uses_only_threads_list() -> None:
         == 0
     )
     assert len(result.threads) == n
-    for thread in result.threads:
+    for i, thread in enumerate(result.threads):
         assert thread.id.startswith("thread-")
-        assert thread.messages == []
+        assert thread.snippet == f"Preview for thread {i}"
         dumped = thread.model_dump(by_alias=True)
+        assert dumped == {"id": thread.id, "snippet": f"Preview for thread {i}"}
+        assert "messages" not in dumped
         assert "body" not in dumped
-        assert "plaintextBody" not in dumped
-        assert "htmlBody" not in dumped
+
+
+def test_search_threads_omits_snippet_when_list_row_has_none() -> None:
+    gmail, _ = _gmail_with_list(1)
+    mock_service = gmail._service("user@example.com")
+    mock_service.users.return_value.threads.return_value.list.return_value.execute.return_value = {
+        "threads": [{"id": "thread-0"}],
+    }
+
+    result = gmail.search_threads("user@example.com", page_size=1)
+
+    assert result.threads[0].snippet is None
+    assert "snippet" not in result.threads[0].model_dump(by_alias=True, exclude_none=True)
