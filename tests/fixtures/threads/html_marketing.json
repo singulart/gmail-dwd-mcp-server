@@ -1,0 +1,10 @@
+{
+  "description": "HTML-heavy marketing newsletter layout",
+  "payload": {
+    "mimeType": "text/html",
+    "body": {
+      "size": 347,
+      "data": "PCFET0NUWVBFIGh0bWw-PGh0bWw-PGhlYWQ-PHN0eWxlPi5wcm9tb3tjb2xvcjpyZWR9PC9zdHlsZT48L2hlYWQ-PGJvZHk-Cjx0YWJsZSB3aWR0aD0iNjAwIj48dHI-PHRkPjxoMT5TdW1tZXIgU2FsZTwvaDE-PC90ZD48L3RyPgo8dHI-PHRkPjxpbWcgc3JjPSJodHRwczovL2Nkbi5leGFtcGxlL2Jhbm5lci5wbmciIGFsdD0iYmFubmVyIi8-PC90ZD48L3RyPgo8dHI-PHRkPjxwPlNhdmUgNTAlIHdpdGggY29kZSA8c3Ryb25nPlNBVkU1MDwvc3Ryb25nPi48L3A-CjxhIGhyZWY9Imh0dHBzOi8vc2hvcC5leGFtcGxlL2RlYWxzIj5TaG9wIG5vdzwvYT48L3RkPjwvdHI-PC90YWJsZT4KPC9ib2R5PjwvaHRtbD4="
+    }
+  }
+}

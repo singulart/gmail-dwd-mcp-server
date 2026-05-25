@@ -1,0 +1,10 @@
+{
+  "description": "Plain body with Outlook -----Original Message----- separator",
+  "payload": {
+    "mimeType": "text/plain",
+    "body": {
+      "size": 184,
+      "data": "U291bmRzIGdvb2QgdG8gbWUuCgotLS0tLU9yaWdpbmFsIE1lc3NhZ2UtLS0tLQpGcm9tOiBTZW5kZXIgW21haWx0bzpzZW5kZXJAZXhhbXBsZS5jb21dClNlbnQ6IE1vbmRheSwgSmFudWFyeSAwMSwgMjAyNCA5OjAwIEFNClRvOiBSZWNpcGllbnQKU3ViamVjdDogUmU6IE1lZXRpbmcKCkNhbiB3ZSBtZWV0IHRvbW9ycm93Pw=="
+    }
+  }
+}

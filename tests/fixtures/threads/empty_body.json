@@ -1,0 +1,10 @@
+{
+  "description": "Whitespace-only plain body",
+  "payload": {
+    "mimeType": "text/plain",
+    "body": {
+      "size": 5,
+      "data": "ICBcbiAg"
+    }
+  }
+}

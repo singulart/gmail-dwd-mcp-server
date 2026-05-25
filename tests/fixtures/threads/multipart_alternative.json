@@ -1,0 +1,22 @@
+{
+  "description": "multipart/alternative plain + HTML",
+  "payload": {
+    "mimeType": "multipart/alternative",
+    "parts": [
+      {
+        "mimeType": "text/plain",
+        "body": {
+          "size": 15,
+          "data": "UGxhaW4gdmVyc2lvbg=="
+        }
+      },
+      {
+        "mimeType": "text/html",
+        "body": {
+          "size": 29,
+          "data": "PHA+SFRNTCB2ZXJzaW9uPC9wPg=="
+        }
+      }
+    ]
+  }
+}

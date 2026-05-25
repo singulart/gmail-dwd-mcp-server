@@ -1,0 +1,10 @@
+{
+  "description": "HTML-only with anchor link",
+  "payload": {
+    "mimeType": "text/html",
+    "body": {
+      "size": 64,
+      "data": "PHA-SGVsbG8gPGEgaHJlZj0iaHR0cHM6Ly9leGFtcGxlLmNvbSI-Y2xpY2sgaGVyZTwvYT48L3A-"
+    }
+  }
+}

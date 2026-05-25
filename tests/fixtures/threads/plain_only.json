@@ -1,0 +1,10 @@
+{
+  "description": "Plain-only single part",
+  "payload": {
+    "mimeType": "text/plain",
+    "body": {
+      "size": 13,
+      "data": "SGVsbG8sIHdvcmxkIQ=="
+    }
+  }
+}

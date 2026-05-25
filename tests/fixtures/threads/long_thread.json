@@ -1,0 +1,306 @@
+{
+  "description": "Thread with 12 messages for limit and window tests",
+  "id": "thread-long-001",
+  "messages": [
+    {
+      "id": "msg-01",
+      "snippet": "Thread message 1",
+      "payload": {
+        "mimeType": "text/plain",
+        "headers": [
+          {
+            "name": "Subject",
+            "value": "Long thread subject"
+          },
+          {
+            "name": "From",
+            "value": "sender@example.com"
+          },
+          {
+            "name": "Date",
+            "value": "Mon, 1 Jan 2024 10:00:00 +0000"
+          }
+        ],
+        "body": {
+          "size": 16,
+          "data": "VGhyZWFkIG1lc3NhZ2UgMQ=="
+        }
+      }
+    },
+    {
+      "id": "msg-02",
+      "snippet": "Thread message 2",
+      "payload": {
+        "mimeType": "text/plain",
+        "headers": [
+          {
+            "name": "Subject",
+            "value": "Long thread subject"
+          },
+          {
+            "name": "From",
+            "value": "sender@example.com"
+          },
+          {
+            "name": "Date",
+            "value": "Mon, 2 Jan 2024 10:00:00 +0000"
+          }
+        ],
+        "body": {
+          "size": 16,
+          "data": "VGhyZWFkIG1lc3NhZ2UgMg=="
+        }
+      }
+    },
+    {
+      "id": "msg-03",
+      "snippet": "Thread message 3",
+      "payload": {
+        "mimeType": "text/plain",
+        "headers": [
+          {
+            "name": "Subject",
+            "value": "Long thread subject"
+          },
+          {
+            "name": "From",
+            "value": "sender@example.com"
+          },
+          {
+            "name": "Date",
+            "value": "Mon, 3 Jan 2024 10:00:00 +0000"
+          }
+        ],
+        "body": {
+          "size": 16,
+          "data": "VGhyZWFkIG1lc3NhZ2UgMw=="
+        }
+      }
+    },
+    {
+      "id": "msg-04",
+      "snippet": "Thread message 4",
+      "payload": {
+        "mimeType": "text/plain",
+        "headers": [
+          {
+            "name": "Subject",
+            "value": "Long thread subject"
+          },
+          {
+            "name": "From",
+            "value": "sender@example.com"
+          },
+          {
+            "name": "Date",
+            "value": "Mon, 4 Jan 2024 10:00:00 +0000"
+          }
+        ],
+        "body": {
+          "size": 16,
+          "data": "VGhyZWFkIG1lc3NhZ2UgNA=="
+        }
+      }
+    },
+    {
+      "id": "msg-05",
+      "snippet": "Thread message 5",
+      "payload": {
+        "mimeType": "text/plain",
+        "headers": [
+          {
+            "name": "Subject",
+            "value": "Long thread subject"
+          },
+          {
+            "name": "From",
+            "value": "sender@example.com"
+          },
+          {
+            "name": "Date",
+            "value": "Mon, 5 Jan 2024 10:00:00 +0000"
+          }
+        ],
+        "body": {
+          "size": 16,
+          "data": "VGhyZWFkIG1lc3NhZ2UgNQ=="
+        }
+      }
+    },
+    {
+      "id": "msg-06",
+      "snippet": "Thread message 6",
+      "payload": {
+        "mimeType": "text/plain",
+        "headers": [
+          {
+            "name": "Subject",
+            "value": "Long thread subject"
+          },
+          {
+            "name": "From",
+            "value": "sender@example.com"
+          },
+          {
+            "name": "Date",
+            "value": "Mon, 6 Jan 2024 10:00:00 +0000"
+          }
+        ],
+        "body": {
+          "size": 16,
+          "data": "VGhyZWFkIG1lc3NhZ2UgNg=="
+        }
+      }
+    },
+    {
+      "id": "msg-07",
+      "snippet": "Thread message 7",
+      "payload": {
+        "mimeType": "text/plain",
+        "headers": [
+          {
+            "name": "Subject",
+            "value": "Long thread subject"
+          },
+          {
+            "name": "From",
+            "value": "sender@example.com"
+          },
+          {
+            "name": "Date",
+            "value": "Mon, 7 Jan 2024 10:00:00 +0000"
+          }
+        ],
+        "body": {
+          "size": 16,
+          "data": "VGhyZWFkIG1lc3NhZ2UgNw=="
+        }
+      }
+    },
+    {
+      "id": "msg-08",
+      "snippet": "Thread message 8",
+      "payload": {
+        "mimeType": "text/plain",
+        "headers": [
+          {
+            "name": "Subject",
+            "value": "Long thread subject"
+          },
+          {
+            "name": "From",
+            "value": "sender@example.com"
+          },
+          {
+            "name": "Date",
+            "value": "Mon, 8 Jan 2024 10:00:00 +0000"
+          }
+        ],
+        "body": {
+          "size": 16,
+          "data": "VGhyZWFkIG1lc3NhZ2UgOA=="
+        }
+      }
+    },
+    {
+      "id": "msg-09",
+      "snippet": "Thread message 9",
+      "payload": {
+        "mimeType": "text/plain",
+        "headers": [
+          {
+            "name": "Subject",
+            "value": "Long thread subject"
+          },
+          {
+            "name": "From",
+            "value": "sender@example.com"
+          },
+          {
+            "name": "Date",
+            "value": "Mon, 9 Jan 2024 10:00:00 +0000"
+          }
+        ],
+        "body": {
+          "size": 16,
+          "data": "VGhyZWFkIG1lc3NhZ2UgOQ=="
+        }
+      }
+    },
+    {
+      "id": "msg-10",
+      "snippet": "Thread message 10",
+      "payload": {
+        "mimeType": "text/plain",
+        "headers": [
+          {
+            "name": "Subject",
+            "value": "Long thread subject"
+          },
+          {
+            "name": "From",
+            "value": "sender@example.com"
+          },
+          {
+            "name": "Date",
+            "value": "Mon, 10 Jan 2024 10:00:00 +0000"
+          }
+        ],
+        "body": {
+          "size": 17,
+          "data": "VGhyZWFkIG1lc3NhZ2UgMTA="
+        }
+      }
+    },
+    {
+      "id": "msg-11",
+      "snippet": "Thread message 11",
+      "payload": {
+        "mimeType": "text/plain",
+        "headers": [
+          {
+            "name": "Subject",
+            "value": "Long thread subject"
+          },
+          {
+            "name": "From",
+            "value": "sender@example.com"
+          },
+          {
+            "name": "Date",
+            "value": "Mon, 11 Jan 2024 10:00:00 +0000"
+          }
+        ],
+        "body": {
+          "size": 17,
+          "data": "VGhyZWFkIG1lc3NhZ2UgMTE="
+        }
+      }
+    },
+    {
+      "id": "msg-12",
+      "snippet": "Thread message 12",
+      "payload": {
+        "mimeType": "text/plain",
+        "headers": [
+          {
+            "name": "Subject",
+            "value": "Long thread subject"
+          },
+          {
+            "name": "From",
+            "value": "sender@example.com"
+          },
+          {
+            "name": "Date",
+            "value": "Mon, 12 Jan 2024 10:00:00 +0000"
+          }
+        ],
+        "body": {
+          "size": 17,
+          "data": "VGhyZWFkIG1lc3NhZ2UgMTI="
+        }
+      }
+    }
+  ]
+}
