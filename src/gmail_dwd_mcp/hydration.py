@@ -68,7 +68,11 @@ class HydratedMessage(_CamelModel):
     date: str | None = None
     body: str = ""
     attachment_ids: list[str] = Field(default_factory=list, alias="attachmentIds")
-    omitted_from_thread: bool = Field(default=False, alias="omittedFromThread")
+    omitted_from_thread: bool = Field(
+        default=False,
+        alias="omittedFromThread",
+        description="True when message exceeds messageLimit (metadata only, empty body).",
+    )
 
 
 class HydratedThread(_CamelModel):
