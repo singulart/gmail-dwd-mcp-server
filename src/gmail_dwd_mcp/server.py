@@ -12,9 +12,20 @@ from mcp.types import ToolAnnotations
 
 from gmail_dwd_mcp.auth import WifConfigCache
 from gmail_dwd_mcp.config import Settings
+from gmail_dwd_mcp.gmail_fetch import (
+    get_thread_fetch_executor,
+    shutdown_thread_fetch_executor,
+)
 from gmail_dwd_mcp.gmail_service import GmailService
-from gmail_dwd_mcp.models import MessageFormat
+from gmail_dwd_mcp.hydrate_tools import (
+    hydrate_batch_response,
+    hydrated_thread_response,
+    hydration_options_from_tool,
+    validate_hydrate_batch_size,
+)
 from gmail_dwd_mcp.telemetry import setup_telemetry, tool_span
+from gmail_dwd_mcp.hydration import HydrateResult, HydratedThread, SearchThreadsResult
+from gmail_dwd_mcp.thread_hydrator import ThreadHydrator
 
 READ_ONLY = ToolAnnotations(
     readOnlyHint=True,
@@ -45,14 +56,25 @@ DESTRUCTIVE_IDEMPOTENT = ToolAnnotations(
 @dataclass
 class AppContext:
     gmail: GmailService
+    hydrator: ThreadHydrator
+    max_batch_size: int
 
 
 @asynccontextmanager
 async def app_lifespan(_server: FastMCP) -> AsyncIterator[AppContext]:
     settings = Settings.from_env()
+    get_thread_fetch_executor(max_workers=settings.gmail_hydrate_max_concurrency)
     wif_cache = WifConfigCache(settings)
     gmail = GmailService(wif_cache)
-    yield AppContext(gmail=gmail)
+    hydrator = ThreadHydrator(get_service=gmail._service)
+    try:
+        yield AppContext(
+            gmail=gmail,
+            hydrator=hydrator,
+            max_batch_size=settings.gmail_hydrate_max_batch_size,
+        )
+    finally:
+        shutdown_thread_fetch_executor()
 
 
 mcp = FastMCP(
@@ -68,6 +90,10 @@ def _gmail(ctx: Context[ServerSession, AppContext]) -> GmailService:
     return ctx.request_context.lifespan_context.gmail
 
 
+def _hydrator(ctx: Context[ServerSession, AppContext]) -> ThreadHydrator:
+    return ctx.request_context.lifespan_context.hydrator
+
+
 @mcp.tool(annotations=READ_ONLY)
 def search_threads(
     email: str,
@@ -76,10 +102,11 @@ def search_threads(
     pageSize: int | None = None,
     pageToken: str | None = None,
     includeTrash: bool | None = None,
-) -> dict[str, Any]:
+) -> SearchThreadsResult:
     """Lists email threads from a user's Gmail account.  
     If response includes a `nextPageToken`, you can use it to fetch the next page of threads.
-    Returns IDs and message summaries (not full bodies). Use get_thread for full content.
+    Returns SearchThread rows (id, snippet) from threads.list — no messages array.
+    Use get_threads to hydrate full text.
 
     Filter threads using `query`; syntax described below:
     
@@ -119,15 +146,47 @@ def get_thread(
     email: str,
     threadId: str,
     ctx: Context[ServerSession, AppContext],
-    messageFormat: MessageFormat | None = None,
-) -> dict[str, Any]:
-    """Retrieves a specific email thread including its messages."""
+    stripQuotedContent: bool | None = None,
+    messageLimit: int | None = None,
+    maxBodyChars: int | None = None,
+    totalMaxChars: int | None = None,
+) -> HydratedThread:
+    """Retrieves a normalized email thread for LLM consumption (plain text in body)."""
+    options = hydration_options_from_tool(
+        strip_quoted_content=stripQuotedContent,
+        message_limit=messageLimit,
+        max_body_chars=maxBodyChars,
+        total_max_chars=totalMaxChars,
+    )
     with tool_span("get_thread", email=email):
-        return _gmail(ctx).get_thread(
-            email,
-            thread_id=threadId,
-            message_format=messageFormat,
-        )
+        result = _hydrator(ctx).hydrate(email, [threadId], options)
+        return hydrated_thread_response(result)
+
+
+@mcp.tool(annotations=READ_ONLY)
+def get_threads(
+    email: str,
+    threadIds: list[str],
+    ctx: Context[ServerSession, AppContext],
+    stripQuotedContent: bool | None = None,
+    messageLimit: int | None = None,
+    maxBodyChars: int | None = None,
+    totalMaxChars: int | None = None,
+    includeAttachmentIds: bool | None = None,
+) -> HydrateResult:
+    """Retrieves multiple normalized email threads (partial success: threads, errors, meta)."""
+    lifespan = ctx.request_context.lifespan_context
+    validate_hydrate_batch_size(threadIds, lifespan.max_batch_size)
+    options = hydration_options_from_tool(
+        strip_quoted_content=stripQuotedContent,
+        message_limit=messageLimit,
+        max_body_chars=maxBodyChars,
+        total_max_chars=totalMaxChars,
+        include_attachment_ids=includeAttachmentIds,
+    )
+    with tool_span("get_threads", email=email):
+        result = _hydrator(ctx).hydrate(email, threadIds, options)
+        return hydrate_batch_response(result)
 
 
 @mcp.tool(annotations=WRITE)

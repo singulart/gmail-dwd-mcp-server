@@ -11,7 +11,8 @@ We kept same names and schemas as Google's official MCP ([reference](https://dev
 | Tool | Description |
 |------|-------------|
 | `search_threads` | List threads with optional Gmail query |
-| `get_thread` | Fetch a thread and its messages |
+| `get_thread` | Fetch one normalized thread (LLM-shaped messages) |
+| `get_threads` | Fetch multiple normalized threads |
 | `list_drafts` | List drafts |
 | `create_draft` | Create a draft |
 | `list_labels` | List user labels |
@@ -20,6 +21,122 @@ We kept same names and schemas as Google's official MCP ([reference](https://dev
 | `unlabel_message` | Remove labels from a message |
 | `label_thread` | Add labels to a thread |
 | `unlabel_thread` | Remove labels from a thread |
+
+Read tools use **typed Pydantic return values** so MCP `tools/list` includes a real `outputSchema` (field names and types), not `dict[str, Any]`. Clients that pass `outputSchema` to the model improve tool selection and parsing.
+
+Use two response shapes:
+
+| Tool | Shape | Message text |
+|------|--------|----------------|
+| `search_threads` | **SearchThread** | Thread `id` + list `snippet` — no `messages`, no `body` |
+| `get_thread` / `get_threads` | **HydratedThread** | Normalized plain text in `body` only |
+
+Write tools (`create_draft`, labels, etc.) keep their own schemas and are unrelated to the read shapes above.
+
+### Read tool examples
+
+**`search_threads`** — discover threads (one `threads.list` call; snippet per row, no per-thread fetches):
+
+Request:
+
+```json
+{
+  "name": "search_threads",
+  "arguments": {
+    "email": "user@company.com",
+    "query": "is:unread",
+    "pageSize": 20
+  }
+}
+```
+
+Response (shape):
+
+```json
+{
+  "threads": [
+    { "id": "thread-xyz", "snippet": "Thanks for the update…" },
+    { "id": "thread-abc", "snippet": "Meeting tomorrow at 3pm" }
+  ],
+  "nextPageToken": "..."
+}
+```
+
+**`get_thread`** — hydrate one thread for reading:
+
+Request:
+
+```json
+{
+  "name": "get_thread",
+  "arguments": {
+    "email": "user@company.com",
+    "threadId": "thread-xyz",
+    "messageLimit": 20,
+    "maxBodyChars": 16000,
+    "stripQuotedContent": true
+  }
+}
+```
+
+Response (shape):
+
+```json
+{
+  "id": "thread-xyz",
+  "messages": [
+    {
+      "id": "msg-abc",
+      "subject": "Re: Project status",
+      "sender": "colleague@company.com",
+      "toRecipients": ["user@company.com"],
+      "ccRecipients": [],
+      "date": "Mon, 12 May 2025 14:30:00 +0000",
+      "body": "Thanks for the update. I'll review today.",
+      "attachmentIds": ["att-001"],
+      "omittedFromThread": false
+    }
+  ]
+}
+```
+
+**`get_threads`** — batch hydrate with partial success:
+
+Request:
+
+```json
+{
+  "name": "get_threads",
+  "arguments": {
+    "email": "user@company.com",
+    "threadIds": ["thread-xyz", "thread-missing"]
+  }
+}
+```
+
+Response (shape):
+
+```json
+{
+  "threads": [ { "id": "thread-xyz", "messages": [ { "id": "msg-abc", "body": "…" } ] } ],
+  "errors": [
+    {
+      "threadId": "thread-missing",
+      "message": "Thread not found: thread-missing",
+      "code": "NOT_FOUND"
+    }
+  ],
+  "meta": {
+    "requestedCount": 2,
+    "successCount": 1,
+    "errorCount": 1,
+    "gmailApiCalls": 2,
+    "quotaUnitsEstimated": 80,
+    "totalChars": 42,
+    "truncated": false
+  }
+}
+```
 
 ## Prerequisites
 
@@ -151,21 +268,6 @@ python -m gmail_dwd_mcp
         "AWS_REGION": "us-east-1"
       }
     }
-  }
-}
-```
-
-## Example tool call
-
-Impersonate `user@company.com` and search inbox:
-
-```json
-{
-  "name": "search_threads",
-  "arguments": {
-    "email": "user@company.com",
-    "query": "is:unread",
-    "pageSize": 10
   }
 }
 ```

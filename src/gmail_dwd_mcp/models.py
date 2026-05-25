@@ -1,15 +1,8 @@
 from __future__ import annotations
 
-from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
-
-
-class MessageFormat(str, Enum):
-    MESSAGE_FORMAT_UNSPECIFIED = "MESSAGE_FORMAT_UNSPECIFIED"
-    MINIMAL = "MINIMAL"
-    FULL_CONTENT = "FULL_CONTENT"
 
 
 class LabelColor(BaseModel):

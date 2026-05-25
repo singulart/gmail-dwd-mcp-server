@@ -15,10 +15,21 @@ dependencies = [
     "boto3>=1.36.0",
     "pydantic>=2.10.0",
     "aws-opentelemetry-distro>=0.17.0",
+    "html2text>=2024.2.26",
+    "email-reply-parser>=0.5.12",
 ]
 
 [project.scripts]
 gmail-dwd-mcp = "gmail_dwd_mcp.server:main"
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/gmail_dwd_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
