@@ -105,3 +105,21 @@ class HydrateResult(_CamelModel):
 def hydration_to_json(model: BaseModel) -> dict[str, Any]:
     """Serialize hydration models for MCP tool responses (camelCase, omit nulls)."""
     return model.model_dump(by_alias=True, exclude_none=True)
+
+
+def triage_thread_from_api_thread(thread: dict[str, Any]) -> TriageThread:
+    """Map a Gmail API thread dict (metadata messages) to :class:`TriageThread`."""
+    messages: list[TriageMessage] = []
+    for msg in thread.get("messages") or []:
+        messages.append(
+            TriageMessage(
+                id=msg["id"],
+                snippet=msg.get("snippet"),
+                subject=msg.get("subject"),
+                sender=msg.get("sender"),
+                to_recipients=msg.get("toRecipients") or [],
+                cc_recipients=msg.get("ccRecipients") or [],
+                date=msg.get("date"),
+            )
+        )
+    return TriageThread(id=thread["id"], messages=messages)

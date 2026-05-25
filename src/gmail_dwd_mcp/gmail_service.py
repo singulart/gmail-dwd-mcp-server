@@ -16,7 +16,7 @@ from gmail_dwd_mcp.mime import (
     plain_to_html,
     strip_trailing_plain_signature,
 )
-from gmail_dwd_mcp.models import MessageFormat
+from gmail_dwd_mcp.hydration import hydration_to_json, triage_thread_from_api_thread
 from gmail_dwd_mcp.telemetry import traced_gmail_method
 
 
@@ -69,27 +69,16 @@ class GmailService:
         )
         threads_out: list[dict[str, Any]] = []
         for summary in list_resp.get("threads", []):
-            thread = self._get_thread_internal(
-                service,
-                summary["id"],
-                message_format=MessageFormat.MINIMAL,
-            )
-            threads_out.append(thread)
+            raw = self._fetch_triage_thread(service, summary["id"])
+            threads_out.append(hydration_to_json(triage_thread_from_api_thread(raw)))
 
         result: dict[str, Any] = {"threads": threads_out}
         if list_resp.get("nextPageToken"):
             result["nextPageToken"] = list_resp["nextPageToken"]
         return result
 
-    def _get_thread_internal(
-        self,
-        service,
-        thread_id: str,
-        *,
-        message_format: MessageFormat,
-    ) -> dict[str, Any]:
-        full_content = message_format != MessageFormat.MINIMAL
-        fmt = "full" if full_content else "metadata"
+    def _fetch_triage_thread(self, service, thread_id: str) -> dict[str, Any]:
+        """Fetch thread metadata for search_threads (no message bodies)."""
         metadata_headers = ["Subject", "From", "To", "Cc", "Date"]
         thread = (
             service.users()
@@ -97,23 +86,15 @@ class GmailService:
             .get(
                 userId="me",
                 id=thread_id,
-                format=fmt,
-                metadataHeaders=metadata_headers if fmt == "metadata" else None,
+                format="metadata",
+                metadataHeaders=metadata_headers,
             )
             .execute()
         )
-        messages: list[dict[str, Any]] = []
-        for msg in thread.get("messages", []):
-            if full_content and message_needs_full_fetch(msg):
-                full_msg = (
-                    service.users()
-                    .messages()
-                    .get(userId="me", id=msg["id"], format="full")
-                    .execute()
-                )
-                messages.append(message_from_gmail_api(full_msg, full_content=True))
-            else:
-                messages.append(message_from_gmail_api(msg, full_content=full_content))
+        messages = [
+            message_from_gmail_api(msg, full_content=False)
+            for msg in thread.get("messages", [])
+        ]
         return {"id": thread["id"], "messages": messages}
 
     @traced_gmail_method
@@ -295,17 +276,6 @@ class GmailService:
             body["removeLabelIds"] = remove
         service.users().threads().modify(userId="me", id=thread_id, body=body).execute()
         return {}
-
-    @staticmethod
-    def _resolve_format(message_format: MessageFormat | str | None) -> MessageFormat:
-        if message_format is None or message_format in (
-            MessageFormat.MESSAGE_FORMAT_UNSPECIFIED,
-            "MESSAGE_FORMAT_UNSPECIFIED",
-        ):
-            return MessageFormat.FULL_CONTENT
-        if isinstance(message_format, str):
-            return MessageFormat(message_format)
-        return message_format
 
     @staticmethod
     def _label_from_api(label: dict[str, Any]) -> dict[str, Any]:

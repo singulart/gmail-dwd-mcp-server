@@ -22,6 +22,132 @@ We kept same names and schemas as Google's official MCP ([reference](https://dev
 | `label_thread` | Add labels to a thread |
 | `unlabel_thread` | Remove labels from a thread |
 
+This server is **LLM-only** for read tools: there is no `messageFormat` switch and no `FULL_CONTENT` mode. Use two response shapes:
+
+| Tool | Shape | Message text |
+|------|--------|----------------|
+| `search_threads` | **TriageThread** | `snippet` + headers only — no `body` |
+| `get_thread` / `get_threads` | **HydratedThread** | Normalized plain text in `body` only |
+
+Write tools (`create_draft`, labels, etc.) keep their own schemas and are unrelated to the read shapes above.
+
+### Read tool examples
+
+**`search_threads`** — triage a inbox slice (metadata + snippet):
+
+Request:
+
+```json
+{
+  "name": "search_threads",
+  "arguments": {
+    "email": "user@company.com",
+    "query": "is:unread",
+    "pageSize": 2
+  }
+}
+```
+
+Response (shape):
+
+```json
+{
+  "threads": [
+    {
+      "id": "thread-xyz",
+      "messages": [
+        {
+          "id": "msg-abc",
+          "snippet": "Thanks for the update…",
+          "subject": "Re: Project status",
+          "sender": "colleague@company.com",
+          "toRecipients": ["user@company.com"],
+          "ccRecipients": [],
+          "date": "Mon, 12 May 2025 14:30:00 +0000"
+        }
+      ]
+    }
+  ],
+  "nextPageToken": "..."
+}
+```
+
+**`get_thread`** — hydrate one thread for reading:
+
+Request:
+
+```json
+{
+  "name": "get_thread",
+  "arguments": {
+    "email": "user@company.com",
+    "threadId": "thread-xyz",
+    "messageLimit": 20,
+    "maxBodyChars": 16000,
+    "stripQuotedContent": true
+  }
+}
+```
+
+Response (shape):
+
+```json
+{
+  "id": "thread-xyz",
+  "messages": [
+    {
+      "id": "msg-abc",
+      "subject": "Re: Project status",
+      "sender": "colleague@company.com",
+      "toRecipients": ["user@company.com"],
+      "ccRecipients": [],
+      "date": "Mon, 12 May 2025 14:30:00 +0000",
+      "body": "Thanks for the update. I'll review today.",
+      "attachmentIds": ["att-001"],
+      "omittedFromThread": false
+    }
+  ]
+}
+```
+
+**`get_threads`** — batch hydrate with partial success:
+
+Request:
+
+```json
+{
+  "name": "get_threads",
+  "arguments": {
+    "email": "user@company.com",
+    "threadIds": ["thread-xyz", "thread-missing"]
+  }
+}
+```
+
+Response (shape):
+
+```json
+{
+  "threads": [ { "id": "thread-xyz", "messages": [ { "id": "msg-abc", "body": "…" } ] } ],
+  "errors": [
+    {
+      "threadId": "thread-missing",
+      "message": "Thread not found: thread-missing",
+      "code": "NOT_FOUND"
+    }
+  ],
+  "meta": {
+    "requestedCount": 2,
+    "successCount": 1,
+    "errorCount": 1,
+    "gmailApiCalls": 2,
+    "quotaUnitsEstimated": 80,
+    "totalChars": 42,
+    "truncated": false
+  }
+}
+```
+
 ## Prerequisites
 
 1. **Google Cloud**: Service account with Gmail API enabled.
@@ -152,21 +278,6 @@ python -m gmail_dwd_mcp
         "AWS_REGION": "us-east-1"
       }
     }
-  }
-}
-```
-
-## Example tool call
-
-Impersonate `user@company.com` and search inbox:
-
-```json
-{
-  "name": "search_threads",
-  "arguments": {
-    "email": "user@company.com",
-    "query": "is:unread",
-    "pageSize": 10
   }
 }
 ```

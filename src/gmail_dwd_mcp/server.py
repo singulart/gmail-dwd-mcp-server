@@ -104,7 +104,7 @@ def search_threads(
 ) -> dict[str, Any]:
     """Lists email threads from a user's Gmail account.  
     If response includes a `nextPageToken`, you can use it to fetch the next page of threads.
-    Returns IDs and message summaries (not full bodies). Use get_thread for full content.
+    Returns triage metadata and snippets (no message bodies). Use get_thread or get_threads to hydrate.
 
     Filter threads using `query`; syntax described below:
     

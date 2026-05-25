@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from gmail_dwd_mcp.gmail_service import GmailService, message_needs_full_fetch
+from gmail_dwd_mcp.hydration import hydration_to_json, triage_thread_from_api_thread
 from gmail_dwd_mcp.mime import message_from_gmail_api
-from gmail_dwd_mcp.models import MessageFormat
 
 
 def _b64(text: str) -> str:
@@ -60,37 +60,25 @@ def test_message_needs_full_fetch_without_payload() -> None:
     assert message_needs_full_fetch(msg) is True
 
 
-def test_get_thread_internal_uses_only_threads_get_when_payload_inline() -> None:
+def test_fetch_triage_thread_uses_metadata_only() -> None:
     gmail, messages_get = _mock_gmail_service(_thread_with_inline_payload())
 
-    result = gmail._get_thread_internal(
-        gmail._service("user@example.com"),
-        "thread-1",
-        message_format=MessageFormat.FULL_CONTENT,
-    )
+    raw = gmail._fetch_triage_thread(gmail._service("user@example.com"), "thread-1")
+    triage = hydration_to_json(triage_thread_from_api_thread(raw))
 
     gmail._service("user@example.com").users().threads().get.assert_called_once()
-    messages_get.execute.assert_not_called()
-    assert result["id"] == "thread-1"
-    assert len(result["messages"]) == 1
-    assert result["messages"][0]["plaintextBody"] == "Hello world"
-    assert result["messages"][0]["subject"] == "Test subject"
-
-
-def test_get_thread_internal_fetches_message_when_payload_missing() -> None:
-    thread = _thread_with_inline_payload(include_payload=False)
-    fetched = _thread_with_inline_payload()["messages"][0]
-    gmail, messages_get = _mock_gmail_service(thread)
-    messages_get.execute.return_value = fetched
-
-    result = gmail._get_thread_internal(
-        gmail._service("user@example.com"),
-        "thread-1",
-        message_format=MessageFormat.FULL_CONTENT,
+    call_kwargs = (
+        gmail._service("user@example.com").users().threads().get.call_args.kwargs
     )
-
-    messages_get.execute.assert_called_once()
-    assert result["messages"][0]["plaintextBody"] == "Hello world"
+    assert call_kwargs["format"] == "metadata"
+    messages_get.execute.assert_not_called()
+    assert triage["id"] == "thread-1"
+    assert len(triage["messages"]) == 1
+    assert triage["messages"][0]["snippet"] == "Hello world"
+    assert triage["messages"][0]["subject"] == "Test subject"
+    assert "body" not in triage["messages"][0]
+    assert "plaintextBody" not in triage["messages"][0]
+    assert "htmlBody" not in triage["messages"][0]
 
 
 def test_message_from_gmail_api_writes_no_stdout(capsys: pytest.CaptureFixture[str]) -> None:
