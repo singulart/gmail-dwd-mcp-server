@@ -1,6 +1,13 @@
 import os
 from dataclasses import dataclass
 
+DEFAULT_GMAIL_API_NUM_RETRIES = 3
+
+
+def gmail_api_num_retries_from_env() -> int:
+    """Gmail API client retries passed to HttpRequest.execute(num_retries=...)."""
+    return max(int(os.environ.get("GMAIL_API_NUM_RETRIES", str(DEFAULT_GMAIL_API_NUM_RETRIES))), 0)
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -9,6 +16,7 @@ class Settings:
     ssm_parameter_name: str
     aws_region: str | None
     wif_cache_ttl_seconds: int
+    gmail_api_num_retries: int
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -23,6 +31,7 @@ class Settings:
             ssm_parameter_name=name,
             aws_region=os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION"),
             wif_cache_ttl_seconds=max(ttl, 0),
+            gmail_api_num_retries=gmail_api_num_retries_from_env(),
         )
 
 

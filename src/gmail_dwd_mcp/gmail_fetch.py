@@ -6,6 +6,7 @@ from typing import Any
 
 from googleapiclient.errors import HttpError
 
+from gmail_dwd_mcp.config import gmail_api_num_retries_from_env
 from gmail_dwd_mcp.rate_limiter import THREADS_GET_QUOTA_UNITS, QuotaRateLimiter
 
 
@@ -31,22 +32,27 @@ def fetch_thread_raw(
     *,
     email: str | None = None,
     rate_limiter: QuotaRateLimiter | None = None,
+    num_retries: int | None = None,
 ) -> dict[str, Any]:
     """Fetch a full Gmail thread in one ``threads.get`` call (format=full).
 
     When ``rate_limiter`` is set, ``email`` must be provided and
     :data:`~gmail_dwd_mcp.rate_limiter.THREADS_GET_QUOTA_UNITS` are reserved first.
+
+    Retries use google-api-python-client's built-in backoff (429, 5xx, rate-limit 403).
+    ``num_retries`` defaults to ``GMAIL_API_NUM_RETRIES`` (3); 0 means one attempt.
     """
     if rate_limiter is not None:
         if not email:
             raise ValueError("email is required when rate_limiter is provided")
         rate_limiter.acquire(email, THREADS_GET_QUOTA_UNITS)
+    retries = gmail_api_num_retries_from_env() if num_retries is None else num_retries
     try:
         return (
             service.users()
             .threads()
             .get(userId="me", id=thread_id, format="full")
-            .execute()
+            .execute(num_retries=retries)
         )
     except HttpError as err:
         raise _map_http_error(err, thread_id=thread_id) from err
