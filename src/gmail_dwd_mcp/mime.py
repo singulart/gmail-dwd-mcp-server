@@ -123,7 +123,6 @@ def message_from_gmail_api(
     *,
     full_content: bool,
 ) -> dict[str, Any]:
-    print(f"message_from_gmail_api: {msg}")
     headers = msg.get("payload", {}).get("headers", [])
     if not headers and "payload" in msg:
         headers = msg["payload"].get("headers", [])

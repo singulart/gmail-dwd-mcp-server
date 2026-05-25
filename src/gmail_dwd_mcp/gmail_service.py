@@ -20,6 +20,19 @@ from gmail_dwd_mcp.models import MessageFormat
 from gmail_dwd_mcp.telemetry import traced_gmail_method
 
 
+def message_needs_full_fetch(msg: dict[str, Any]) -> bool:
+    """Whether messages.get(format=full) is required for body extraction.
+
+    threads.get(format=full) normally embeds each message's MIME payload inline.
+    A follow-up fetch is only needed when that payload is absent (unexpected API
+    response or a partial message resource). Empty bodies still include payload
+    metadata and do not require a second fetch.
+    """
+    if "raw" in msg:
+        return False
+    return not msg.get("payload")
+
+
 class GmailService:
     def __init__(self, wif_cache: WifConfigCache) -> None:
         self._wif_cache = wif_cache
@@ -103,7 +116,7 @@ class GmailService:
         )
         messages: list[dict[str, Any]] = []
         for msg in thread.get("messages", []):
-            if full_content and "raw" not in msg:
+            if full_content and message_needs_full_fetch(msg):
                 full_msg = (
                     service.users()
                     .messages()

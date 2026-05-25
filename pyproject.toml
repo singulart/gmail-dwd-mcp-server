@@ -20,5 +20,14 @@ dependencies = [
 [project.scripts]
 gmail-dwd-mcp = "gmail_dwd_mcp.server:main"
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/gmail_dwd_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
