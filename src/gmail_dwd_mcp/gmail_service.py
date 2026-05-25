@@ -16,7 +16,7 @@ from gmail_dwd_mcp.mime import (
     plain_to_html,
     strip_trailing_plain_signature,
 )
-from gmail_dwd_mcp.hydration import hydration_to_json, triage_thread_from_api_thread
+from gmail_dwd_mcp.hydration import hydration_to_json, triage_thread_from_list_summary
 from gmail_dwd_mcp.telemetry import traced_gmail_method
 
 
@@ -51,6 +51,12 @@ class GmailService:
         page_token: str | None = None,
         include_trash: bool | None = None,
     ) -> dict[str, Any]:
+        """Discover threads for triage (no bodies, no per-thread fetches).
+
+        API cost: **1** ``threads.list`` call. Each result is a thread id with
+        ``messages: []``. Use ``get_thread`` / ``get_threads`` for snippets and
+        normalized bodies.
+        """
         service = self._service(email)
         user_id = "me"
         max_results = min(page_size or 20, 50)
@@ -67,35 +73,15 @@ class GmailService:
             .list(userId=user_id, q=list_query or None, maxResults=max_results, pageToken=page_token)
             .execute()
         )
-        threads_out: list[dict[str, Any]] = []
-        for summary in list_resp.get("threads", []):
-            raw = self._fetch_triage_thread(service, summary["id"])
-            threads_out.append(hydration_to_json(triage_thread_from_api_thread(raw)))
+        threads_out = [
+            hydration_to_json(triage_thread_from_list_summary(summary))
+            for summary in list_resp.get("threads", [])
+        ]
 
         result: dict[str, Any] = {"threads": threads_out}
         if list_resp.get("nextPageToken"):
             result["nextPageToken"] = list_resp["nextPageToken"]
         return result
-
-    def _fetch_triage_thread(self, service, thread_id: str) -> dict[str, Any]:
-        """Fetch thread metadata for search_threads (no message bodies)."""
-        metadata_headers = ["Subject", "From", "To", "Cc", "Date"]
-        thread = (
-            service.users()
-            .threads()
-            .get(
-                userId="me",
-                id=thread_id,
-                format="metadata",
-                metadataHeaders=metadata_headers,
-            )
-            .execute()
-        )
-        messages = [
-            message_from_gmail_api(msg, full_content=False)
-            for msg in thread.get("messages", [])
-        ]
-        return {"id": thread["id"], "messages": messages}
 
     @traced_gmail_method
     def list_drafts(

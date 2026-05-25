@@ -41,7 +41,7 @@ class HydrationOptions(_CamelModel):
 
 
 class TriageMessage(_CamelModel):
-    """search_threads message shape: metadata + snippet, no body."""
+    """Per-message triage fields when enriched elsewhere; search_threads uses ids only."""
 
     id: str
     snippet: str | None = None
@@ -105,6 +105,11 @@ class HydrateResult(_CamelModel):
 def hydration_to_json(model: BaseModel) -> dict[str, Any]:
     """Serialize hydration models for MCP tool responses (camelCase, omit nulls)."""
     return model.model_dump(by_alias=True, exclude_none=True)
+
+
+def triage_thread_from_list_summary(summary: dict[str, Any]) -> TriageThread:
+    """Minimal triage row from ``threads.list`` (thread id only, no per-message fetch)."""
+    return TriageThread(id=summary["id"], messages=[])
 
 
 def triage_thread_from_api_thread(thread: dict[str, Any]) -> TriageThread:

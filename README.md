@@ -12,7 +12,7 @@ We kept same names and schemas as Google's official MCP ([reference](https://dev
 |------|-------------|
 | `search_threads` | List threads with optional Gmail query |
 | `get_thread` | Fetch one normalized thread (LLM-shaped messages) |
-| `get_threads` | Fetch multiple normalized threads (partial success) |
+| `get_threads` | Fetch multiple normalized threads |
 | `list_drafts` | List drafts |
 | `create_draft` | Create a draft |
 | `list_labels` | List user labels |
@@ -22,18 +22,18 @@ We kept same names and schemas as Google's official MCP ([reference](https://dev
 | `label_thread` | Add labels to a thread |
 | `unlabel_thread` | Remove labels from a thread |
 
-This server is **LLM-only** for read tools: there is no `messageFormat` switch and no `FULL_CONTENT` mode. Use two response shapes:
+Use two response shapes:
 
 | Tool | Shape | Message text |
 |------|--------|----------------|
-| `search_threads` | **TriageThread** | `snippet` + headers only — no `body` |
+| `search_threads` | **TriageThread** | Thread ids only (`messages: []`) — no `body` |
 | `get_thread` / `get_threads` | **HydratedThread** | Normalized plain text in `body` only |
 
 Write tools (`create_draft`, labels, etc.) keep their own schemas and are unrelated to the read shapes above.
 
 ### Read tool examples
 
-**`search_threads`** — triage a inbox slice (metadata + snippet):
+**`search_threads`** — discover thread ids (one `threads.list` call; no per-thread fetches):
 
 Request:
 
@@ -43,7 +43,7 @@ Request:
   "arguments": {
     "email": "user@company.com",
     "query": "is:unread",
-    "pageSize": 2
+    "pageSize": 20
   }
 }
 ```
@@ -53,20 +53,8 @@ Response (shape):
 ```json
 {
   "threads": [
-    {
-      "id": "thread-xyz",
-      "messages": [
-        {
-          "id": "msg-abc",
-          "snippet": "Thanks for the update…",
-          "subject": "Re: Project status",
-          "sender": "colleague@company.com",
-          "toRecipients": ["user@company.com"],
-          "ccRecipients": [],
-          "date": "Mon, 12 May 2025 14:30:00 +0000"
-        }
-      ]
-    }
+    { "id": "thread-xyz", "messages": [] },
+    { "id": "thread-abc", "messages": [] }
   ],
   "nextPageToken": "..."
 }
