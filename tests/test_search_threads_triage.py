@@ -26,10 +26,11 @@ def test_search_threads_uses_only_threads_list() -> None:
         mock_service.users.return_value.threads.return_value.get.return_value.execute.call_count
         == 0
     )
-    assert len(result["threads"]) == n
-    for thread in result["threads"]:
-        assert thread["id"].startswith("thread-")
-        assert thread["messages"] == []
-        assert "body" not in thread
-        assert "plaintextBody" not in str(thread)
-        assert "htmlBody" not in str(thread)
+    assert len(result.threads) == n
+    for thread in result.threads:
+        assert thread.id.startswith("thread-")
+        assert thread.messages == []
+        dumped = thread.model_dump(by_alias=True)
+        assert "body" not in dumped
+        assert "plaintextBody" not in dumped
+        assert "htmlBody" not in dumped

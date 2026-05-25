@@ -16,7 +16,10 @@ from gmail_dwd_mcp.mime import (
     plain_to_html,
     strip_trailing_plain_signature,
 )
-from gmail_dwd_mcp.hydration import hydration_to_json, triage_thread_from_list_summary
+from gmail_dwd_mcp.hydration import (
+    SearchThreadsResult,
+    triage_thread_from_list_summary,
+)
 from gmail_dwd_mcp.telemetry import traced_gmail_method
 
 
@@ -50,7 +53,7 @@ class GmailService:
         page_size: int | None = None,
         page_token: str | None = None,
         include_trash: bool | None = None,
-    ) -> dict[str, Any]:
+    ) -> SearchThreadsResult:
         """Discover threads for triage (no bodies, no per-thread fetches).
 
         API cost: **1** ``threads.list`` call. Each result is a thread id with
@@ -74,14 +77,13 @@ class GmailService:
             .execute()
         )
         threads_out = [
-            hydration_to_json(triage_thread_from_list_summary(summary))
+            triage_thread_from_list_summary(summary)
             for summary in list_resp.get("threads", [])
         ]
-
-        result: dict[str, Any] = {"threads": threads_out}
-        if list_resp.get("nextPageToken"):
-            result["nextPageToken"] = list_resp["nextPageToken"]
-        return result
+        return SearchThreadsResult(
+            threads=threads_out,
+            next_page_token=list_resp.get("nextPageToken"),
+        )
 
     @traced_gmail_method
     def list_drafts(

@@ -22,6 +22,8 @@ We kept same names and schemas as Google's official MCP ([reference](https://dev
 | `label_thread` | Add labels to a thread |
 | `unlabel_thread` | Remove labels from a thread |
 
+Read tools use **typed Pydantic return values** so MCP `tools/list` includes a real `outputSchema` (field names and types), not `dict[str, Any]`. Clients that pass `outputSchema` to the model improve tool selection and parsing.
+
 Use two response shapes:
 
 | Tool | Shape | Message text |

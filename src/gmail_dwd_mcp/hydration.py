@@ -102,6 +102,13 @@ class HydrateResult(_CamelModel):
     meta: HydrateMeta = Field(default_factory=HydrateMeta)
 
 
+class SearchThreadsResult(_CamelModel):
+    """search_threads response: thread ids for discovery. Hydrate separately."""
+
+    threads: list[TriageThread] = Field(default_factory=list)
+    next_page_token: str | None = Field(default=None, alias="nextPageToken")
+
+
 def hydration_to_json(model: BaseModel) -> dict[str, Any]:
     """Serialize hydration models for MCP tool responses (camelCase, omit nulls)."""
     return model.model_dump(by_alias=True, exclude_none=True)

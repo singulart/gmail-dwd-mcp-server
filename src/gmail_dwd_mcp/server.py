@@ -24,6 +24,7 @@ from gmail_dwd_mcp.hydrate_tools import (
     validate_hydrate_batch_size,
 )
 from gmail_dwd_mcp.telemetry import setup_telemetry, tool_span
+from gmail_dwd_mcp.hydration import HydrateResult, HydratedThread, SearchThreadsResult
 from gmail_dwd_mcp.thread_hydrator import ThreadHydrator
 
 READ_ONLY = ToolAnnotations(
@@ -101,10 +102,10 @@ def search_threads(
     pageSize: int | None = None,
     pageToken: str | None = None,
     includeTrash: bool | None = None,
-) -> dict[str, Any]:
+) -> SearchThreadsResult:
     """Lists email threads from a user's Gmail account.  
     If response includes a `nextPageToken`, you can use it to fetch the next page of threads.
-    Returns thread ids for triage (no message bodies). Use get_thread or get_threads to hydrate.
+    Returns thread ids for triage (no message bodies). Use get_threads to hydrate.
 
     Filter threads using `query`; syntax described below:
     
@@ -148,7 +149,7 @@ def get_thread(
     messageLimit: int | None = None,
     maxBodyChars: int | None = None,
     totalMaxChars: int | None = None,
-) -> dict[str, Any]:
+) -> HydratedThread:
     """Retrieves a normalized email thread for LLM consumption (plain text in body)."""
     options = hydration_options_from_tool(
         strip_quoted_content=stripQuotedContent,
@@ -171,7 +172,7 @@ def get_threads(
     maxBodyChars: int | None = None,
     totalMaxChars: int | None = None,
     includeAttachmentIds: bool | None = None,
-) -> dict[str, Any]:
+) -> HydrateResult:
     """Retrieves multiple normalized email threads (partial success: threads, errors, meta)."""
     lifespan = ctx.request_context.lifespan_context
     validate_hydrate_batch_size(threadIds, lifespan.max_batch_size)

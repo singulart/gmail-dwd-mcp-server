@@ -47,11 +47,12 @@ def test_hydrated_thread_response_serializes_thread() -> None:
             )
         ],
     )
-    data = hydrated_thread_response(result)
-    assert data["id"] == "t1"
-    assert data["messages"][0]["body"] == "hello"
-    assert "plaintextBody" not in data
-    assert "htmlBody" not in data
+    thread = hydrated_thread_response(result)
+    assert thread.id == "t1"
+    assert thread.messages[0].body == "hello"
+    dumped = thread.model_dump(by_alias=True)
+    assert "plaintextBody" not in dumped
+    assert "htmlBody" not in dumped
 
 
 def test_validate_hydrate_batch_size_rejects_oversized_batch() -> None:

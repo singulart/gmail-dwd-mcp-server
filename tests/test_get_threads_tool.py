@@ -54,12 +54,13 @@ def test_get_threads_delegates_three_ids_in_one_hydrate_call(
         thread_ids,
         HydrationOptions(),
     )
-    assert len(result["threads"]) == 3
-    assert result["errors"] == []
-    assert result["meta"]["requestedCount"] == 3
-    assert result["threads"][0]["messages"][0]["body"] == "a"
-    assert "plaintextBody" not in str(result)
-    assert "htmlBody" not in str(result)
+    assert len(result.threads) == 3
+    assert result.errors == []
+    assert result.meta.requested_count == 3
+    assert result.threads[0].messages[0].body == "a"
+    dumped = result.model_dump(by_alias=True)
+    assert "plaintextBody" not in dumped
+    assert "htmlBody" not in dumped
 
 
 @patch("gmail_dwd_mcp.server.tool_span")
@@ -73,11 +74,11 @@ def test_get_threads_returns_partial_success(mock_tool_span: MagicMock) -> None:
 
     result = get_threads("user@example.com", ["ok", "bad"], _ctx(hydrator))
 
-    assert len(result["threads"]) == 1
-    assert result["threads"][0]["id"] == "ok"
-    assert len(result["errors"]) == 1
-    assert result["errors"][0]["threadId"] == "bad"
-    assert result["errors"][0]["code"] == "NOT_FOUND"
+    assert len(result.threads) == 1
+    assert result.threads[0].id == "ok"
+    assert len(result.errors) == 1
+    assert result.errors[0].thread_id == "bad"
+    assert result.errors[0].code == "NOT_FOUND"
     _ = mock_tool_span
 
 

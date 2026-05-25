@@ -56,10 +56,11 @@ def test_get_thread_delegates_to_hydrator(mock_tool_span: MagicMock) -> None:
     assert options.strip_quoted_content is False
     assert options.message_limit == 10
     assert options.max_body_chars == 8000
-    assert result["id"] == "thread-1"
-    assert result["messages"][0]["body"] == "normalized text"
-    assert "plaintextBody" not in result
-    assert "htmlBody" not in str(result)
+    assert result.id == "thread-1"
+    assert result.messages[0].body == "normalized text"
+    dumped = result.model_dump(by_alias=True)
+    assert "plaintextBody" not in dumped
+    assert "htmlBody" not in dumped
 
 
 @patch("gmail_dwd_mcp.server.tool_span")

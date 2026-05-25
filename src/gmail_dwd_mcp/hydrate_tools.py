@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from gmail_dwd_mcp.hydration import HydrateResult, HydrationOptions, hydration_to_json
+from gmail_dwd_mcp.hydration import (
+    HydrateResult,
+    HydratedThread,
+    HydrationOptions,
+)
 
 
 def hydration_options_from_tool(
@@ -39,16 +43,16 @@ def validate_hydrate_batch_size(thread_ids: list[str], max_batch_size: int) -> N
         )
 
 
-def hydrate_batch_response(result: HydrateResult) -> dict[str, Any]:
-    """Serialize partial-success batch result for get_threads."""
-    return hydration_to_json(result)
+def hydrate_batch_response(result: HydrateResult) -> HydrateResult:
+    """Return partial-success batch result for get_threads (MCP output schema)."""
+    return result
 
 
-def hydrated_thread_response(result: HydrateResult) -> dict[str, Any]:
-    """Serialize a single successful :class:`HydratedThread` for get_thread."""
+def hydrated_thread_response(result: HydrateResult) -> HydratedThread:
+    """Return a single successful thread for get_thread (MCP output schema)."""
     if result.errors:
         err = result.errors[0]
         raise ValueError(f"{err.code}: {err.message}")
     if not result.threads:
         raise ValueError("NOT_FOUND: Thread not found")
-    return hydration_to_json(result.threads[0])
+    return result.threads[0]
