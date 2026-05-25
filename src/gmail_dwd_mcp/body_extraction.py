@@ -6,6 +6,7 @@ import base64
 from typing import Any
 
 from gmail_dwd_mcp.html_convert import convert_html_to_text
+from gmail_dwd_mcp.reply_strip import strip_html_quote_regions
 
 
 def extract_body(payload: dict[str, Any]) -> str:
@@ -20,7 +21,7 @@ def extract_body(payload: dict[str, Any]) -> str:
         return plain.strip()
     html = _find_part_text(payload, "text/html")
     if html.strip():
-        return convert_html_to_text(html)
+        return convert_html_to_text(strip_html_quote_regions(html))
     return ""
 
 

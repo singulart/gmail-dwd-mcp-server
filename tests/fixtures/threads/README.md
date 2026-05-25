@@ -30,6 +30,7 @@ At load time, `tests/fixture_loader.py` converts `bodyText` → Gmail API `body.
 | `outlook_quoted_reply.py` | Plain text with `-----Original Message-----` |
 | `html_marketing.py` | HTML-heavy marketing newsletter layout |
 | `empty_body.py` | Whitespace-only plain body |
+| `plain_signature.py` | Plain body with `--` signature block |
 
 ## Full thread
 

@@ -16,6 +16,7 @@ dependencies = [
     "pydantic>=2.10.0",
     "aws-opentelemetry-distro>=0.17.0",
     "html2text>=2024.2.26",
+    "email-reply-parser>=0.5.12",
 ]
 
 [project.scripts]
