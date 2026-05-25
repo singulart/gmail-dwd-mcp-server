@@ -13,10 +13,10 @@ from gmail_dwd_mcp.mime import (
 from tests.conftest import b64_text, load_payload_fixture
 
 PAYLOAD_FIXTURES = [
-    ("plain_only.json", "Hello, world!"),
-    ("html_only.json", "Hello click here"),
-    ("multipart_alternative.json", "Plain version"),
-    ("nested_multipart.json", "Nested plain body"),
+    ("plain_only.py", "Hello, world!"),
+    ("html_only.py", "Hello click here"),
+    ("multipart_alternative.py", "Plain version"),
+    ("nested_multipart.py", "Nested plain body"),
 ]
 
 
@@ -37,7 +37,7 @@ def test_extract_body_html_only_link_text_not_url() -> None:
 
 
 def test_extract_body_skips_attachment_parts() -> None:
-    payload = load_payload_fixture("nested_multipart.json")
+    payload = load_payload_fixture("nested_multipart.py")
     assert "report.pdf" not in extract_body(payload)
 
 

@@ -1,39 +1,26 @@
 from __future__ import annotations
 
-import base64
-import json
 from pathlib import Path
 
 import pytest
 
-FIXTURES_DIR = Path(__file__).parent / "fixtures" / "threads"
+from tests.fixture_loader import (
+    FIXTURES_DIR,
+    b64_text,
+    list_thread_fixture_names,
+    load_fixture,
+    load_payload_fixture,
+    load_thread_fixture,
+)
 
-
-def b64_text(text: str) -> str:
-    return base64.urlsafe_b64encode(text.encode()).decode()
-
-
-def list_thread_fixture_names() -> list[str]:
-    return sorted(path.name for path in FIXTURES_DIR.glob("*.json"))
-
-
-def load_fixture(name: str) -> dict:
-    path = FIXTURES_DIR / name
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def load_payload_fixture(name: str) -> dict:
-    data = load_fixture(name)
-    if "payload" in data:
-        return data["payload"]
-    return data
-
-
-def load_thread_fixture(name: str) -> dict:
-    data = load_fixture(name)
-    if "messages" not in data:
-        raise ValueError(f"{name} is not a thread fixture (missing messages[])")
-    return data
+__all__ = [
+    "FIXTURES_DIR",
+    "b64_text",
+    "list_thread_fixture_names",
+    "load_fixture",
+    "load_payload_fixture",
+    "load_thread_fixture",
+]
 
 
 @pytest.fixture

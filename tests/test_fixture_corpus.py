@@ -10,7 +10,7 @@ from tests.conftest import (
     load_thread_fixture,
 )
 
-THREAD_FIXTURE = "long_thread.json"
+THREAD_FIXTURE = "long_thread.py"
 MIN_FIXTURE_COUNT = 8
 
 
@@ -50,7 +50,7 @@ def test_single_message_fixtures_expose_payload(fixture_name: str) -> None:
     assert payload.get("mimeType")
 
 
-def test_readme_documents_all_json_fixtures() -> None:
+def test_readme_documents_all_fixtures() -> None:
     readme = (FIXTURES_DIR / "README.md").read_text(encoding="utf-8")
     for name in list_thread_fixture_names():
         assert name in readme, f"README missing {name}"
