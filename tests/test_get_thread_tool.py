@@ -20,6 +20,7 @@ def _ctx(hydrator: MagicMock) -> MagicMock:
     ctx.request_context.lifespan_context = AppContext(
         gmail=MagicMock(),
         hydrator=hydrator,
+        max_batch_size=10,
     )
     return ctx
 

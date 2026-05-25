@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from gmail_dwd_mcp.hydrate_tools import hydrated_thread_response, hydration_options_from_tool
+from gmail_dwd_mcp.hydrate_tools import (
+    hydrated_thread_response,
+    hydration_options_from_tool,
+    validate_hydrate_batch_size,
+)
 from gmail_dwd_mcp.hydration import (
     DEFAULT_MAX_BODY_CHARS,
     DEFAULT_MESSAGE_LIMIT,
@@ -48,6 +52,11 @@ def test_hydrated_thread_response_serializes_thread() -> None:
     assert data["messages"][0]["body"] == "hello"
     assert "plaintextBody" not in data
     assert "htmlBody" not in data
+
+
+def test_validate_hydrate_batch_size_rejects_oversized_batch() -> None:
+    with pytest.raises(ValueError, match="exceeds maximum 3"):
+        validate_hydrate_batch_size(["a", "b", "c", "d"], 3)
 
 
 def test_hydrated_thread_response_raises_on_error() -> None:

@@ -17,7 +17,12 @@ from gmail_dwd_mcp.gmail_fetch import (
     shutdown_thread_fetch_executor,
 )
 from gmail_dwd_mcp.gmail_service import GmailService
-from gmail_dwd_mcp.hydrate_tools import hydrated_thread_response, hydration_options_from_tool
+from gmail_dwd_mcp.hydrate_tools import (
+    hydrate_batch_response,
+    hydrated_thread_response,
+    hydration_options_from_tool,
+    validate_hydrate_batch_size,
+)
 from gmail_dwd_mcp.telemetry import setup_telemetry, tool_span
 from gmail_dwd_mcp.thread_hydrator import ThreadHydrator
 
@@ -51,6 +56,7 @@ DESTRUCTIVE_IDEMPOTENT = ToolAnnotations(
 class AppContext:
     gmail: GmailService
     hydrator: ThreadHydrator
+    max_batch_size: int
 
 
 @asynccontextmanager
@@ -61,7 +67,11 @@ async def app_lifespan(_server: FastMCP) -> AsyncIterator[AppContext]:
     gmail = GmailService(wif_cache)
     hydrator = ThreadHydrator(get_service=gmail._service)
     try:
-        yield AppContext(gmail=gmail, hydrator=hydrator)
+        yield AppContext(
+            gmail=gmail,
+            hydrator=hydrator,
+            max_batch_size=settings.gmail_hydrate_max_batch_size,
+        )
     finally:
         shutdown_thread_fetch_executor()
 
@@ -149,6 +159,32 @@ def get_thread(
     with tool_span("get_thread", email=email):
         result = _hydrator(ctx).hydrate(email, [threadId], options)
         return hydrated_thread_response(result)
+
+
+@mcp.tool(annotations=READ_ONLY)
+def get_threads(
+    email: str,
+    threadIds: list[str],
+    ctx: Context[ServerSession, AppContext],
+    stripQuotedContent: bool | None = None,
+    messageLimit: int | None = None,
+    maxBodyChars: int | None = None,
+    totalMaxChars: int | None = None,
+    includeAttachmentIds: bool | None = None,
+) -> dict[str, Any]:
+    """Retrieves multiple normalized email threads (partial success: threads, errors, meta)."""
+    lifespan = ctx.request_context.lifespan_context
+    validate_hydrate_batch_size(threadIds, lifespan.max_batch_size)
+    options = hydration_options_from_tool(
+        strip_quoted_content=stripQuotedContent,
+        message_limit=messageLimit,
+        max_body_chars=maxBodyChars,
+        total_max_chars=totalMaxChars,
+        include_attachment_ids=includeAttachmentIds,
+    )
+    with tool_span("get_threads", email=email):
+        result = _hydrator(ctx).hydrate(email, threadIds, options)
+        return hydrate_batch_response(result)
 
 
 @mcp.tool(annotations=WRITE)

@@ -3,11 +3,25 @@ from dataclasses import dataclass
 
 DEFAULT_GMAIL_API_NUM_RETRIES = 3
 DEFAULT_GMAIL_HYDRATE_MAX_CONCURRENCY = 5
+DEFAULT_GMAIL_HYDRATE_MAX_BATCH_SIZE = 10
 
 
 def gmail_api_num_retries_from_env() -> int:
     """Gmail API client retries passed to HttpRequest.execute(num_retries=...)."""
     return max(int(os.environ.get("GMAIL_API_NUM_RETRIES", str(DEFAULT_GMAIL_API_NUM_RETRIES))), 0)
+
+
+def gmail_hydrate_max_batch_size_from_env() -> int:
+    """Maximum thread IDs per ``get_threads`` call."""
+    return max(
+        int(
+            os.environ.get(
+                "GMAIL_HYDRATE_MAX_BATCH_SIZE",
+                str(DEFAULT_GMAIL_HYDRATE_MAX_BATCH_SIZE),
+            )
+        ),
+        1,
+    )
 
 
 def gmail_hydrate_max_concurrency_from_env() -> int:
@@ -32,6 +46,7 @@ class Settings:
     wif_cache_ttl_seconds: int
     gmail_api_num_retries: int
     gmail_hydrate_max_concurrency: int
+    gmail_hydrate_max_batch_size: int
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -48,6 +63,7 @@ class Settings:
             wif_cache_ttl_seconds=max(ttl, 0),
             gmail_api_num_retries=gmail_api_num_retries_from_env(),
             gmail_hydrate_max_concurrency=gmail_hydrate_max_concurrency_from_env(),
+            gmail_hydrate_max_batch_size=gmail_hydrate_max_batch_size_from_env(),
         )
 
 

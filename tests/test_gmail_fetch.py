@@ -130,6 +130,15 @@ def test_settings_gmail_api_num_retries_from_env(
     assert settings.gmail_api_num_retries == 0
 
 
+def test_settings_gmail_hydrate_max_batch_size_from_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GCP_WIF_CREDENTIAL_CONFIG_SSM_PARAMETER", "/test/wif")
+    monkeypatch.setenv("GMAIL_HYDRATE_MAX_BATCH_SIZE", "15")
+    settings = Settings.from_env()
+    assert settings.gmail_hydrate_max_batch_size == 15
+
+
 def test_settings_gmail_hydrate_max_concurrency_from_env(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

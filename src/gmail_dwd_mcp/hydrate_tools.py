@@ -30,6 +30,20 @@ def hydration_options_from_tool(
     return HydrationOptions(**overrides)
 
 
+def validate_hydrate_batch_size(thread_ids: list[str], max_batch_size: int) -> None:
+    """Reject oversized batches before any Gmail API calls."""
+    if len(thread_ids) > max_batch_size:
+        raise ValueError(
+            f"Batch size {len(thread_ids)} exceeds maximum {max_batch_size}. "
+            f"Request at most {max_batch_size} thread IDs per get_threads call."
+        )
+
+
+def hydrate_batch_response(result: HydrateResult) -> dict[str, Any]:
+    """Serialize partial-success batch result for get_threads."""
+    return hydration_to_json(result)
+
+
 def hydrated_thread_response(result: HydrateResult) -> dict[str, Any]:
     """Serialize a single successful :class:`HydratedThread` for get_thread."""
     if result.errors:

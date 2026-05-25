@@ -11,7 +11,8 @@ We kept same names and schemas as Google's official MCP ([reference](https://dev
 | Tool | Description |
 |------|-------------|
 | `search_threads` | List threads with optional Gmail query |
-| `get_thread` | Fetch a thread and its messages |
+| `get_thread` | Fetch one normalized thread (LLM-shaped messages) |
+| `get_threads` | Fetch multiple normalized threads (partial success) |
 | `list_drafts` | List drafts |
 | `create_draft` | Create a draft |
 | `list_labels` | List user labels |
