@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 from typing import Any
 
@@ -20,6 +21,7 @@ from gmail_dwd_mcp.hydration import (
     HydratedThread,
     HydrationOptions,
 )
+from gmail_dwd_mcp.hydration_logging import log_hydrate_complete, log_hydrate_thread_errors
 from gmail_dwd_mcp.normalize import normalize_thread
 from gmail_dwd_mcp.rate_limiter import THREADS_GET_QUOTA_UNITS, QuotaRateLimiter
 from gmail_dwd_mcp.size_caps import TRUNCATION_MARKER
@@ -74,16 +76,22 @@ class ThreadHydrator:
         thread_ids: list[str],
         options: HydrationOptions | None = None,
     ) -> HydrateResult:
+        started = time.monotonic()
         opts = options or HydrationOptions()
         ordered_unique = list(dict.fromkeys(thread_ids))
         if not ordered_unique:
-            return HydrateResult(
+            result = HydrateResult(
                 meta=HydrateMeta(
                     requested_count=len(thread_ids),
                     success_count=0,
                     error_count=0,
                 )
             )
+            log_hydrate_complete(
+                duration_ms=int((time.monotonic() - started) * 1000),
+                result=result,
+            )
+            return result
 
         service = self._get_service(email)
         fetch_results = fetch_threads_raw(
@@ -114,7 +122,7 @@ class ThreadHydrator:
         truncated = global_truncated or any(_thread_truncated(t) for t in threads)
 
         api_calls = len(ordered_unique)
-        return HydrateResult(
+        result = HydrateResult(
             threads=threads,
             errors=errors,
             meta=HydrateMeta(
@@ -127,3 +135,9 @@ class ThreadHydrator:
                 truncated=truncated,
             ),
         )
+        log_hydrate_thread_errors(result)
+        log_hydrate_complete(
+            duration_ms=int((time.monotonic() - started) * 1000),
+            result=result,
+        )
+        return result
