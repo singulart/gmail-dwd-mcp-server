@@ -17,8 +17,9 @@ from gmail_dwd_mcp.gmail_fetch import (
     shutdown_thread_fetch_executor,
 )
 from gmail_dwd_mcp.gmail_service import GmailService
-from gmail_dwd_mcp.models import MessageFormat
+from gmail_dwd_mcp.hydrate_tools import hydrated_thread_response, hydration_options_from_tool
 from gmail_dwd_mcp.telemetry import setup_telemetry, tool_span
+from gmail_dwd_mcp.thread_hydrator import ThreadHydrator
 
 READ_ONLY = ToolAnnotations(
     readOnlyHint=True,
@@ -49,6 +50,7 @@ DESTRUCTIVE_IDEMPOTENT = ToolAnnotations(
 @dataclass
 class AppContext:
     gmail: GmailService
+    hydrator: ThreadHydrator
 
 
 @asynccontextmanager
@@ -57,8 +59,9 @@ async def app_lifespan(_server: FastMCP) -> AsyncIterator[AppContext]:
     get_thread_fetch_executor(max_workers=settings.gmail_hydrate_max_concurrency)
     wif_cache = WifConfigCache(settings)
     gmail = GmailService(wif_cache)
+    hydrator = ThreadHydrator(get_service=gmail._service)
     try:
-        yield AppContext(gmail=gmail)
+        yield AppContext(gmail=gmail, hydrator=hydrator)
     finally:
         shutdown_thread_fetch_executor()
 
@@ -74,6 +77,10 @@ mcp = FastMCP(
 
 def _gmail(ctx: Context[ServerSession, AppContext]) -> GmailService:
     return ctx.request_context.lifespan_context.gmail
+
+
+def _hydrator(ctx: Context[ServerSession, AppContext]) -> ThreadHydrator:
+    return ctx.request_context.lifespan_context.hydrator
 
 
 @mcp.tool(annotations=READ_ONLY)
@@ -127,15 +134,21 @@ def get_thread(
     email: str,
     threadId: str,
     ctx: Context[ServerSession, AppContext],
-    messageFormat: MessageFormat | None = None,
+    stripQuotedContent: bool | None = None,
+    messageLimit: int | None = None,
+    maxBodyChars: int | None = None,
+    totalMaxChars: int | None = None,
 ) -> dict[str, Any]:
-    """Retrieves a specific email thread including its messages."""
+    """Retrieves a normalized email thread for LLM consumption (plain text in body)."""
+    options = hydration_options_from_tool(
+        strip_quoted_content=stripQuotedContent,
+        message_limit=messageLimit,
+        max_body_chars=maxBodyChars,
+        total_max_chars=totalMaxChars,
+    )
     with tool_span("get_thread", email=email):
-        return _gmail(ctx).get_thread(
-            email,
-            thread_id=threadId,
-            message_format=messageFormat,
-        )
+        result = _hydrator(ctx).hydrate(email, [threadId], options)
+        return hydrated_thread_response(result)
 
 
 @mcp.tool(annotations=WRITE)

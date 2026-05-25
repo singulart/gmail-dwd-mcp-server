@@ -81,18 +81,6 @@ class GmailService:
             result["nextPageToken"] = list_resp["nextPageToken"]
         return result
 
-    @traced_gmail_method
-    def get_thread(
-        self,
-        email: str,
-        *,
-        thread_id: str,
-        message_format: MessageFormat | str | None = None,
-    ) -> dict[str, Any]:
-        service = self._service(email)
-        fmt = self._resolve_format(message_format)
-        return self._get_thread_internal(service, thread_id, message_format=fmt)
-
     def _get_thread_internal(
         self,
         service,
